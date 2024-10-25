@@ -208,7 +208,7 @@ public class TopperPlugin extends BasePlugin {
                 if (fractionDigits > 0) {
                     decimalFormatBuilder.append(decimalSeparator);
                     for (int i = 0; i < fractionDigits; i++) {
-                        decimalFormatBuilder.append("0");
+                        decimalFormatBuilder.append("#");
                     }
                 }
                 String decimalFormat = decimalFormatBuilder.toString();

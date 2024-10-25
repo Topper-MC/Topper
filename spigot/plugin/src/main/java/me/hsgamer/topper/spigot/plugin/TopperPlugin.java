@@ -200,10 +200,9 @@ public class TopperPlugin extends BasePlugin {
                 char groupSeparator = Optional.ofNullable(formatter.get("group-separator")).map(String::valueOf).map(s -> s.charAt(0)).orElse(',');
                 boolean showGroupSeparator = Optional.ofNullable(formatter.get("show-group-separator")).map(String::valueOf).map(Boolean::parseBoolean).orElse(true);
                 StringBuilder decimalFormatBuilder = new StringBuilder();
+                decimalFormatBuilder.append("#");
                 if (showGroupSeparator) {
-                    decimalFormatBuilder.append("#").append(groupSeparator).append("###");
-                } else {
-                    decimalFormatBuilder.append("0");
+                    decimalFormatBuilder.append(groupSeparator).append("###");
                 }
                 if (fractionDigits > 0) {
                     decimalFormatBuilder.append(decimalSeparator);

@@ -12,10 +12,12 @@ import me.hsgamer.topper.spigot.agent.runnable.SpigotRunnableAgent;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 import me.hsgamer.topper.spigot.plugin.builder.ValueProviderBuilder;
 import me.hsgamer.topper.spigot.plugin.config.MainConfig;
+import me.hsgamer.topper.spigot.plugin.event.GenericEntryUpdateEvent;
+import me.hsgamer.topper.spigot.plugin.event.TopEntryChangeEvent;
 import me.hsgamer.topper.spigot.plugin.holder.display.ValueDisplay;
 import me.hsgamer.topper.spigot.plugin.holder.provider.ValueProvider;
 import me.hsgamer.topper.spigot.plugin.manager.TopManager;
-import me.hsgamer.topper.spigot.plugin.notification.UpdateNotificationManager;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
 import java.util.Comparator;
@@ -64,8 +66,19 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
             }
 
             @Override
+            public void onCreate(DataEntry<UUID, Double> entry) {
+                Bukkit.getPluginManager().callEvent(new TopEntryChangeEvent(entry, TopEntryChangeEvent.Type.ADD));
+            }
+
+            @Override
             public void onUpdate(DataEntry<UUID, Double> entry) {
-                UpdateNotificationManager.notifyConsumers(name, entry.getKey(), entry.getValue());
+                Bukkit.getPluginManager().callEvent(new TopEntryChangeEvent(entry, TopEntryChangeEvent.Type.UPDATE));
+                Bukkit.getPluginManager().callEvent(new GenericEntryUpdateEvent(name, entry.getKey(), entry.getValue()));
+            }
+
+            @Override
+            public void onRemove(DataEntry<UUID, Double> entry) {
+                Bukkit.getPluginManager().callEvent(new TopEntryChangeEvent(entry, TopEntryChangeEvent.Type.REMOVE));
             }
         });
     }

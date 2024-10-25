@@ -141,7 +141,7 @@ public class TopperPlugin extends BasePlugin {
         }
 
         Map<String, Map<String, Object>> formatters = new HashMap<>();
-        config.getValues(false, "formatters")
+        config.getNormalizedValues(false, "formatters")
                 .forEach(
                         (key, value) ->
                                 MapUtils.castOptionalStringObjectMap(value).ifPresent(map -> formatters.put(key[0], map))
@@ -169,10 +169,10 @@ public class TopperPlugin extends BasePlugin {
             if (templateManager.getTemplate("topper-sign").isEmpty()) {
                 List<String> newSignLines = new ArrayList<>(signLines);
                 newSignLines.replaceAll(s -> s
-                        .replace("uuid", "%topper_{holder};top_key;{index}%")
-                        .replace("name", "%topper_{holder};top_name;{index}%")
-                        .replace("value", "%topper_{holder};top_value;{index};{format}%")
-                        .replace("value_raw", "%topper_{holder};top_value_raw;{index}%")
+                        .replace("{uuid}", "%topper_{holder};top_key;{index}%")
+                        .replace("{name}", "%topper_{holder};top_name;{index}%")
+                        .replace("{value}", "%topper_{holder};top_value;{index};{format}%")
+                        .replace("{value_raw}", "%topper_{holder};top_value_raw;{index}%")
                 );
                 templateManager.saveTemplate("topper-sign", newSignLines);
             }

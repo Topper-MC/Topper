@@ -108,19 +108,10 @@ public class TopperPlugin extends BasePlugin {
                 if (matcher.matches()) {
                     String placeholder = Optional.ofNullable(matcher.group(2)).orElse("");
                     String prefix = Optional.ofNullable(matcher.group(1)).map(String::toLowerCase).orElse("");
-                    boolean isOnlineOnly = prefix.contains("[online]");
-                    boolean isAsync = prefix.contains("[async]");
-                    boolean isLenient = prefix.contains("[lenient]");
                     map.put("placeholder", placeholder);
-                    if (isOnlineOnly) {
-                        map.put("online", true);
-                    }
-                    if (isAsync) {
-                        map.put("async", true);
-                    }
-                    if (isLenient) {
-                        map.put("lenient", true);
-                    }
+                    map.put("online", prefix.contains("[online]"));
+                    map.put("async", prefix.contains("[async]"));
+                    map.put("lenient", prefix.contains("[lenient]"));
                 } else {
                     map.put("placeholder", value);
                 }

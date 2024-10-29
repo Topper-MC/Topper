@@ -15,15 +15,16 @@ public class GenericEntryUpdateEvent extends Event {
     private final UUID uuid;
     private final @Nullable Double value;
 
-    public GenericEntryUpdateEvent(String group, String holder, UUID uuid, @Nullable Double value) {
+    public GenericEntryUpdateEvent(String group, String holder, UUID uuid, @Nullable Double value, boolean async) {
+        super(async);
         this.group = group;
         this.holder = holder;
         this.uuid = uuid;
         this.value = value;
     }
 
-    public GenericEntryUpdateEvent(String holder, UUID uuid, @Nullable Double value) {
-        this(DEFAULT_GROUP, holder, uuid, value);
+    public GenericEntryUpdateEvent(String holder, UUID uuid, @Nullable Double value, boolean async) {
+        this(DEFAULT_GROUP, holder, uuid, value, async);
     }
 
     public static HandlerList getHandlerList() {

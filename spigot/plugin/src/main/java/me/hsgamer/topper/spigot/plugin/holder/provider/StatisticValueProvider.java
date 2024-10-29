@@ -60,6 +60,7 @@ public class StatisticValueProvider implements ValueProvider {
 
             switch (statistic.getType()) {
                 case BLOCK:
+                    return Optional.ofNullable(material).filter(Material::isBlock).map(m -> (double) player.getStatistic(statistic, m));
                 case ITEM:
                     return Optional.ofNullable(material).map(m -> (double) player.getStatistic(statistic, m));
                 case ENTITY:

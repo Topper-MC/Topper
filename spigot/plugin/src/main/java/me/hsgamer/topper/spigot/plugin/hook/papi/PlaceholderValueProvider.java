@@ -68,6 +68,6 @@ public class PlaceholderValueProvider implements ValueProvider {
                 }
                 return Optional.empty();
             }
-        }, (isAsync ? AsyncScheduler.get(plugin) : GlobalScheduler.get(plugin))::run);
+        }, (isAsync ? AsyncScheduler.get(plugin) : GlobalScheduler.get(plugin)).getExecutor());
     }
 }

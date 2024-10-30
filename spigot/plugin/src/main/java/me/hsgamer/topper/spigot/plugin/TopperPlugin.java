@@ -111,7 +111,7 @@ public class TopperPlugin extends BasePlugin {
                     map.put("placeholder", placeholder);
                     map.put("online", prefix.contains("[online]"));
                     map.put("async", prefix.contains("[async]"));
-                    map.put("lenient", prefix.contains("[lenient]"));
+                    map.put("show-errors", !prefix.contains("[lenient]"));
                 } else {
                     map.put("placeholder", value);
                 }

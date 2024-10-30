@@ -18,7 +18,7 @@ public class PlaceholderValueProvider implements ValueProvider {
     private final String placeholder;
     private final boolean isOnlineOnly;
     private final boolean isAsync;
-    private final boolean isLenient;
+    private final boolean showErrors;
 
     public PlaceholderValueProvider(TopperPlugin plugin, Map<String, Object> map) {
         this.plugin = plugin;
@@ -33,7 +33,7 @@ public class PlaceholderValueProvider implements ValueProvider {
                 .map(String::toLowerCase)
                 .map(Boolean::parseBoolean)
                 .orElse(false);
-        isLenient = Optional.ofNullable(map.get("lenient"))
+        showErrors = Optional.ofNullable(map.get("show-errors"))
                 .map(Object::toString)
                 .map(String::toLowerCase)
                 .map(Boolean::parseBoolean)
@@ -56,14 +56,14 @@ public class PlaceholderValueProvider implements ValueProvider {
             try {
                 String parsed = PlaceholderAPI.setPlaceholders(player, placeholder).trim();
                 if (parsed.isEmpty()) {
-                    if (!isLenient) {
+                    if (showErrors) {
                         plugin.getLogger().warning("The placeholder " + placeholder + " returns empty");
                     }
                     return Optional.empty();
                 }
                 return Optional.of(Double.parseDouble(parsed));
             } catch (Exception e) {
-                if (!isLenient) {
+                if (showErrors) {
                     plugin.getLogger().log(Level.WARNING, "There is an error while parsing the placeholder: " + placeholder, e);
                 }
                 return Optional.empty();

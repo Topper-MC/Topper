@@ -43,9 +43,14 @@ public class PlaceholderValueProvider implements ValueProvider {
     @Override
     public CompletableFuture<Optional<Double>> getValue(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
-            OfflinePlayer player = plugin.getServer().getOfflinePlayer(uuid);
-            if (!player.isOnline() && isOnlineOnly) {
-                return Optional.empty();
+            OfflinePlayer player;
+            if (isOnlineOnly) {
+                player = plugin.getServer().getPlayer(uuid);
+                if (player == null) {
+                    return Optional.empty();
+                }
+            } else {
+                player = plugin.getServer().getOfflinePlayer(uuid);
             }
 
             try {

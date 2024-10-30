@@ -60,11 +60,20 @@ public class StatisticValueProvider implements ValueProvider {
 
             switch (statistic.getType()) {
                 case BLOCK:
-                    return Optional.ofNullable(material).filter(Material::isBlock).map(m -> (double) player.getStatistic(statistic, m));
+                    if (material == null || !material.isBlock()) {
+                        throw new IllegalArgumentException("Invalid material for BLOCK statistic");
+                    }
+                    return Optional.of((double) player.getStatistic(statistic, material));
                 case ITEM:
-                    return Optional.ofNullable(material).map(m -> (double) player.getStatistic(statistic, m));
+                    if (material == null) {
+                        throw new IllegalArgumentException("Invalid material for ITEM statistic");
+                    }
+                    return Optional.of((double) player.getStatistic(statistic, material));
                 case ENTITY:
-                    return Optional.ofNullable(entityType).map(e -> (double) player.getStatistic(statistic, e));
+                    if (entityType == null) {
+                        throw new IllegalArgumentException("Invalid entity for ENTITY statistic");
+                    }
+                    return Optional.of((double) player.getStatistic(statistic, entityType));
                 default:
                     return Optional.of((double) player.getStatistic(statistic));
             }

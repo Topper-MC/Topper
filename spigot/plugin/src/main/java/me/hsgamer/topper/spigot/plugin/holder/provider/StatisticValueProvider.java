@@ -61,17 +61,17 @@ public class StatisticValueProvider implements ValueProvider {
             switch (statistic.getType()) {
                 case BLOCK:
                     if (material == null || !material.isBlock()) {
-                        throw new IllegalArgumentException("Invalid material for BLOCK statistic");
+                        throw new IllegalArgumentException("Invalid material for BLOCK statistic. You must check if you set a block material for the statistic.");
                     }
                     return Optional.of((double) player.getStatistic(statistic, material));
                 case ITEM:
                     if (material == null) {
-                        throw new IllegalArgumentException("Invalid material for ITEM statistic");
+                        throw new IllegalArgumentException("Invalid material for ITEM statistic. You must check if you set a material for the statistic.");
                     }
                     return Optional.of((double) player.getStatistic(statistic, material));
                 case ENTITY:
                     if (entityType == null) {
-                        throw new IllegalArgumentException("Invalid entity for ENTITY statistic");
+                        throw new IllegalArgumentException("Invalid entity for ENTITY statistic. You must check if you set an entity for the statistic.");
                     }
                     return Optional.of((double) player.getStatistic(statistic, entityType));
                 default:

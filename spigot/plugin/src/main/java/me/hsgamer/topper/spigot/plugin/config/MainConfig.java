@@ -10,6 +10,11 @@ import java.util.Map;
 
 public interface MainConfig {
     @ConfigPath(value = "holders", converter = StringStringObjectMapConverter.class, priority = 1)
+    @Comment({
+            "The settings for the Top Holders",
+            "Check the wiki for more information on how to setup Top Holder using Value Provider",
+            "https://topper-mc.github.io/Wiki/spigot/provider.html"
+    })
     default Map<String, Map<String, Object>> getHolders() {
         return Collections.emptyMap();
     }

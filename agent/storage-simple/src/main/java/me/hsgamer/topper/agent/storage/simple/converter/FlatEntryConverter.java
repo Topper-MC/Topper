@@ -5,7 +5,7 @@ public interface FlatEntryConverter<K, V> {
 
     String toRawKey(K key);
 
-    V toValue(Object object);
+    V toValue(String value);
 
-    Object toRawValue(V object);
+    String toRawValue(V object);
 }

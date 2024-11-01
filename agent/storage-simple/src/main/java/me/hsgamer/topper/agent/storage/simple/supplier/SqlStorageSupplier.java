@@ -7,7 +7,6 @@ import me.hsgamer.hscore.logger.common.Logger;
 import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.agent.storage.DataStorage;
 import me.hsgamer.topper.agent.storage.simple.converter.SqlEntryConverter;
-import me.hsgamer.topper.core.DataHolder;
 import org.intellij.lang.annotations.Language;
 
 import java.sql.Connection;

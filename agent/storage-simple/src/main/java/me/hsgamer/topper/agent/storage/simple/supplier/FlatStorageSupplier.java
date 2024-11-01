@@ -63,7 +63,7 @@ public class FlatStorageSupplier<K, V> implements DataStorageSupplier<K, V> {
                 Map<K, V> map = new HashMap<>();
                 properties.forEach((key, value) -> {
                     K k = converter.toKey(key.toString());
-                    V v = converter.toValue(value);
+                    V v = converter.toValue(value.toString());
                     map.put(k, v);
                 });
                 return map;

@@ -45,7 +45,7 @@ public class ConfigStorageSupplier<K, V> implements DataStorageSupplier<K, V> {
                 Map<String[], Object> values = config.getValues(false);
                 Map<K, V> map = new HashMap<>();
                 values.forEach((path, value) -> {
-                    V finalValue = converter.toValue(value);
+                    V finalValue = converter.toValue(String.valueOf(value));
                     if (finalValue != null) {
                         K finalKey = converter.toKey(path[0]);
                         map.put(finalKey, finalValue);
@@ -69,7 +69,7 @@ public class ConfigStorageSupplier<K, V> implements DataStorageSupplier<K, V> {
             @Override
             public CompletableFuture<Optional<V>> load(K key, boolean urgent) {
                 return CompletableFuture.supplyAsync(
-                        () -> Optional.ofNullable(config.get(converter.toRawKey(key))).map(converter::toValue),
+                        () -> Optional.ofNullable(config.get(converter.toRawKey(key))).map(String::valueOf).map(converter::toValue),
                         urgent ? Runnable::run : mainThreadExecutor
                 );
             }

@@ -4,16 +4,16 @@ import me.hsgamer.topper.agent.storage.simple.converter.FlatEntryConverter;
 
 public interface FlatNumberEntryConverter<K> extends FlatEntryConverter<K, Double> {
     @Override
-    default Double toValue(Object object) {
+    default Double toValue(String object) {
         try {
-            return Double.parseDouble(String.valueOf(object));
+            return Double.parseDouble(object);
         } catch (Exception e) {
             return null;
         }
     }
 
     @Override
-    default Object toRawValue(Double object) {
-        return object;
+    default String toRawValue(Double object) {
+        return Double.toString(object);
     }
 }

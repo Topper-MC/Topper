@@ -37,7 +37,7 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
             instance.getLogger().warning("No value provider found for " + name);
             return ValueProvider.EMPTY;
         });
-        this.valueDisplay = new ValueDisplay(this, map);
+        this.valueDisplay = new ValueDisplay(map);
 
         this.updateAgent = new UpdateAgent<>(instance.getLogger(), this, valueProvider::getValue);
         updateAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskUpdateEntryPerTick());

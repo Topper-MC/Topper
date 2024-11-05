@@ -20,7 +20,8 @@ import me.hsgamer.topper.spigot.plugin.manager.TopQueryManager;
 import org.bstats.bukkit.Metrics;
 
 import java.io.File;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 
 public class TopperPlugin extends BasePlugin {

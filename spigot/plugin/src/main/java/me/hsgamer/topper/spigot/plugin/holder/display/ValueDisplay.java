@@ -15,14 +15,12 @@ import java.util.regex.Pattern;
 public class ValueDisplay {
     private static final Pattern VALUE_PLACEHOLDER_PATTERN = Pattern.compile("\\{value(?:_(.*))?}");
 
-    private final NumberTopHolder holder;
-    private final String line;
-    private final String displayNullName;
-    private final String displayNullUuid;
-    private final String displayNullValue;
+    public final String line;
+    public final String displayNullName;
+    public final String displayNullUuid;
+    public final String displayNullValue;
 
-    public ValueDisplay(NumberTopHolder holder, Map<String, Object> map) {
-        this.holder = holder;
+    public ValueDisplay(Map<String, Object> map) {
         this.line = Optional.ofNullable(map.get("line"))
                 .map(Object::toString)
                 .orElse("&7[&b{index}&7] &b{name} &7- &b{value}");
@@ -70,14 +68,13 @@ public class ValueDisplay {
         }
     }
 
-    public String getDisplayLine(int index /* 1-based */) {
-        Map.Entry<UUID, Double> dataSnapshot = holder.getSnapshotAgent().getSnapshotByIndex(index - 1).orElse(null);
+    public String getDisplayLine(int index /* 1-based */, @Nullable Map.Entry<UUID, Double> entry) {
         String line = this.line
                 .replace("{index}", String.valueOf(index))
-                .replace("{uuid}", getDisplayUuid(dataSnapshot == null ? null : dataSnapshot.getKey()))
-                .replace("{name}", getDisplayName(dataSnapshot == null ? null : dataSnapshot.getKey()));
+                .replace("{uuid}", getDisplayUuid(entry == null ? null : entry.getKey()))
+                .replace("{name}", getDisplayName(entry == null ? null : entry.getKey()));
 
-        Double value = dataSnapshot == null ? null : dataSnapshot.getValue();
+        Double value = entry == null ? null : entry.getValue();
         Matcher matcher = VALUE_PLACEHOLDER_PATTERN.matcher(line);
         while (matcher.find()) {
             String formatType = matcher.group(1);
@@ -85,5 +82,9 @@ public class ValueDisplay {
         }
 
         return line;
+    }
+
+    public String getDisplayLine(int index /* 1-based */, NumberTopHolder holder) {
+        return getDisplayLine(index, holder.getSnapshotAgent().getSnapshotByIndex(index - 1).orElse(null));
     }
 }

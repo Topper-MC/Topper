@@ -68,7 +68,7 @@ public class GetTopListCommand extends Command {
         }
 
         ValueDisplay valueDisplay = topHolder.getValueDisplay();
-        List<String> topList = IntStream.rangeClosed(fromIndex, toIndex).mapToObj(valueDisplay::getDisplayLine).collect(Collectors.toList());
+        List<String> topList = IntStream.rangeClosed(fromIndex, toIndex).mapToObj(index -> valueDisplay.getDisplayLine(index, topHolder)).collect(Collectors.toList());
         if (topList.isEmpty()) {
             sendMessage(sender, instance.get(MessageConfig.class).getTopEmpty());
         } else {

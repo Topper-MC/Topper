@@ -27,8 +27,8 @@ import java.util.UUID;
 public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
     private final ValueProvider valueProvider;
     private final ValueDisplay valueDisplay;
-    private final UpdateAgent<UUID, Double> updateAgent;
     private final StorageAgent<UUID, Double> storageAgent;
+    private final UpdateAgent<UUID, Double> updateAgent;
     private final SnapshotAgent<UUID, Double> snapshotAgent;
 
     public NumberTopHolder(TopperPlugin instance, String name, Map<String, Object> map) {
@@ -39,13 +39,13 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
         });
         this.valueDisplay = new ValueDisplay(map);
 
-        this.updateAgent = new UpdateAgent<>(instance.getLogger(), this, valueProvider::getValue);
-        updateAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskUpdateEntryPerTick());
-        addAgent(new SpigotRunnableAgent<>(updateAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
-
         this.storageAgent = new StorageAgent<>(instance.getLogger(), this, instance.get(TopManager.class).getStorageSupplier().getStorage(name));
         storageAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskSaveEntryPerTick());
         addAgent(new SpigotRunnableAgent<>(storageAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskSaveDelay()));
+
+        this.updateAgent = new UpdateAgent<>(instance.getLogger(), this, valueProvider::getValue);
+        updateAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskUpdateEntryPerTick());
+        addAgent(new SpigotRunnableAgent<>(updateAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
 
         this.snapshotAgent = new SnapshotAgent<>(this);
         boolean reverseOrder = Optional.ofNullable(map.get("reverse")).map(String::valueOf).map(Boolean::parseBoolean).orElse(true);
@@ -76,12 +76,12 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
         return valueProvider.getDefaultValue();
     }
 
-    public UpdateAgent<UUID, Double> getUpdateAgent() {
-        return updateAgent;
-    }
-
     public StorageAgent<UUID, Double> getStorageAgent() {
         return storageAgent;
+    }
+
+    public UpdateAgent<UUID, Double> getUpdateAgent() {
+        return updateAgent;
     }
 
     public SnapshotAgent<UUID, Double> getSnapshotAgent() {

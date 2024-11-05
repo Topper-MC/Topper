@@ -6,6 +6,7 @@ import me.hsgamer.topper.core.DataHolder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class AgentDataHolder<K, V> extends DataHolder<K, V> {
     private final List<Agent<K, V>> agentList = new ArrayList<>();
@@ -42,11 +43,18 @@ public class AgentDataHolder<K, V> extends DataHolder<K, V> {
     }
 
     public final void unregister() {
-        agentList.forEach(Agent::beforeStop);
+        Consumer<Consumer<Agent<K, V>>> reverseRunnable = consumer -> {
+            for (int i = agentList.size() - 1; i >= 0; i--) {
+                Agent<K, V> agent = agentList.get(i);
+                consumer.accept(agent);
+            }
+        };
+
+        reverseRunnable.accept(Agent::beforeStop);
 
         getEntryMap().values().forEach(entry -> agentList.forEach(agent -> agent.onUnregister(entry)));
         clear();
 
-        agentList.forEach(Agent::stop);
+        reverseRunnable.accept(Agent::stop);
     }
 }

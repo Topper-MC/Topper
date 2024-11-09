@@ -27,7 +27,7 @@ public class DataStorageBuilder<K, V> extends Builder<Void, DataStorageSupplier<
         this.defaultSupplier = () -> new FlatStorageSupplier<>(holderBaseFolder, flatEntryConverter);
         register(defaultSupplier, "flat", "properties", "");
         register(v -> new SqliteStorageSupplier<>(databaseSettingSupplier.get(), holderBaseFolder, sqlEntryConverter), "sqlite", "sqlite3");
-        register(v -> new OldSqliteStorageSupplier<>(databaseSettingSupplier.get(), holderBaseFolder, sqlEntryConverter), "old-sqlite");
+        register(v -> new NewSqliteStorageSupplier<>(databaseSettingSupplier.get(), holderBaseFolder, sqlEntryConverter), "new-sqlite", "new-sqlite3");
         register(v -> new MySqlStorageSupplier<>(databaseSettingSupplier.get(), sqlEntryConverter), "mysql", "mysql-connector-java", "mysql-connector");
     }
 

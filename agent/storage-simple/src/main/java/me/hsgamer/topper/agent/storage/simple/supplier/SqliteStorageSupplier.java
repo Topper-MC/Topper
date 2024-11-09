@@ -43,7 +43,7 @@ public class SqliteStorageSupplier<K, V> extends SqlStorageSupplier<K, V> {
 
     @Override
     protected String toSaveStatement(String name, String[] keyColumns, String[] valueColumns) {
-        StringBuilder statement = new StringBuilder("INSERT INTO `")
+        StringBuilder statement = new StringBuilder("INSERT OR REPLACE INTO `")
                 .append(name)
                 .append("` (");
         for (int i = 0; i < keyColumns.length + valueColumns.length; i++) {
@@ -61,28 +61,7 @@ public class SqliteStorageSupplier<K, V> extends SqlStorageSupplier<K, V> {
                 statement.append(", ");
             }
         }
-        statement.append(")");
-        statement.append(" ON CONFLICT (");
-        for (int i = 0; i < keyColumns.length; i++) {
-            statement.append("`")
-                    .append(keyColumns[i])
-                    .append("`");
-            if (i != keyColumns.length - 1) {
-                statement.append(", ");
-            }
-        }
-        statement.append(") DO UPDATE SET ");
-        for (int i = 0; i < valueColumns.length; i++) {
-            statement.append("`")
-                    .append(valueColumns[i])
-                    .append("` = EXCLUDED.`")
-                    .append(valueColumns[i])
-                    .append("`");
-            if (i != valueColumns.length - 1) {
-                statement.append(", ");
-            }
-        }
-        statement.append(";");
+        statement.append(");");
         return statement.toString();
     }
 

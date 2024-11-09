@@ -5,14 +5,14 @@ import me.hsgamer.topper.agent.storage.simple.setting.DatabaseSetting;
 
 import java.io.File;
 
-public class OldSqliteStorageSupplier<K, V> extends SqliteStorageSupplier<K, V> {
-    public OldSqliteStorageSupplier(DatabaseSetting databaseSetting, File holderBaseFolder, SqlEntryConverter<K, V> converter) {
+public class NewSqliteStorageSupplier<K, V> extends SqliteStorageSupplier<K, V> {
+    public NewSqliteStorageSupplier(DatabaseSetting databaseSetting, File holderBaseFolder, SqlEntryConverter<K, V> converter) {
         super(databaseSetting, holderBaseFolder, converter);
     }
 
     @Override
     protected String toSaveStatement(String name, String[] keyColumns, String[] valueColumns) {
-        StringBuilder statement = new StringBuilder("INSERT OR REPLACE INTO `")
+        StringBuilder statement = new StringBuilder("INSERT INTO `")
                 .append(name)
                 .append("` (");
         for (int i = 0; i < keyColumns.length + valueColumns.length; i++) {
@@ -30,7 +30,28 @@ public class OldSqliteStorageSupplier<K, V> extends SqliteStorageSupplier<K, V> 
                 statement.append(", ");
             }
         }
-        statement.append(");");
+        statement.append(")");
+        statement.append(" ON CONFLICT (");
+        for (int i = 0; i < keyColumns.length; i++) {
+            statement.append("`")
+                    .append(keyColumns[i])
+                    .append("`");
+            if (i != keyColumns.length - 1) {
+                statement.append(", ");
+            }
+        }
+        statement.append(") DO UPDATE SET ");
+        for (int i = 0; i < valueColumns.length; i++) {
+            statement.append("`")
+                    .append(valueColumns[i])
+                    .append("` = EXCLUDED.`")
+                    .append(valueColumns[i])
+                    .append("`");
+            if (i != valueColumns.length - 1) {
+                statement.append(", ");
+            }
+        }
+        statement.append(";");
         return statement.toString();
     }
 }

@@ -4,10 +4,7 @@ import me.hsgamer.hscore.builder.Builder;
 import me.hsgamer.topper.agent.storage.simple.converter.FlatEntryConverter;
 import me.hsgamer.topper.agent.storage.simple.converter.SqlEntryConverter;
 import me.hsgamer.topper.agent.storage.simple.setting.DatabaseSetting;
-import me.hsgamer.topper.agent.storage.simple.supplier.DataStorageSupplier;
-import me.hsgamer.topper.agent.storage.simple.supplier.FlatStorageSupplier;
-import me.hsgamer.topper.agent.storage.simple.supplier.MySqlStorageSupplier;
-import me.hsgamer.topper.agent.storage.simple.supplier.SqliteStorageSupplier;
+import me.hsgamer.topper.agent.storage.simple.supplier.*;
 
 import java.io.File;
 import java.util.function.Supplier;
@@ -30,6 +27,7 @@ public class DataStorageBuilder<K, V> extends Builder<Void, DataStorageSupplier<
         this.defaultSupplier = () -> new FlatStorageSupplier<>(holderBaseFolder, flatEntryConverter);
         register(defaultSupplier, "flat", "properties", "");
         register(v -> new SqliteStorageSupplier<>(databaseSettingSupplier.get(), holderBaseFolder, sqlEntryConverter), "sqlite", "sqlite3");
+        register(v -> new OldSqliteStorageSupplier<>(databaseSettingSupplier.get(), holderBaseFolder, sqlEntryConverter), "old-sqlite");
         register(v -> new MySqlStorageSupplier<>(databaseSettingSupplier.get(), sqlEntryConverter), "mysql", "mysql-connector-java", "mysql-connector");
     }
 

@@ -74,6 +74,7 @@ public class MySqlStorageSupplier<K, V> extends SqlStorageSupplier<K, V> {
                 statement.append(", ");
             }
         }
+        statement.append(";");
         return statement.toString();
     }
 

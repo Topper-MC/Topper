@@ -37,14 +37,14 @@ public class UpdateAgent<K, V> implements Agent<K, V>, Runnable {
                 break;
             }
             DataEntry<K, V> entry = holder.getOrCreateEntry(k);
-            updateFunction.apply(k).whenComplete((optional, throwable) -> {
-                if (throwable != null) {
-                    logger.log(Level.WARNING, "An error occurred while updating the entry: " + k, throwable);
-                } else {
-                    optional.ifPresent(entry::setValue);
-                }
-                updateQueue.add(k);
-            });
+            updateFunction.apply(k)
+                    .thenAcceptAsync(optional -> optional.ifPresent(entry::setValue))
+                    .whenComplete((v, throwable) -> {
+                        if (throwable != null) {
+                            logger.log(Level.WARNING, "An error occurred while updating the entry: " + k, throwable);
+                        }
+                        updateQueue.add(k);
+                    });
         }
     }
 

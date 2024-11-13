@@ -3,6 +3,7 @@ package me.hsgamer.topper.spigot.agent.storage.simple.supplier;
 import me.hsgamer.hscore.config.Config;
 import me.hsgamer.topper.agent.storage.DataStorage;
 import me.hsgamer.topper.agent.storage.simple.converter.FlatEntryConverter;
+import me.hsgamer.topper.agent.storage.simple.setting.DataStorageSetting;
 import me.hsgamer.topper.agent.storage.simple.supplier.DataStorageSupplier;
 
 import java.io.File;
@@ -14,29 +15,28 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-public class ConfigStorageSupplier<K, V> implements DataStorageSupplier<K, V> {
+public class ConfigStorageSupplier implements DataStorageSupplier {
     private final Executor mainThreadExecutor;
     private final UnaryOperator<String> configNameProvider;
     private final Function<File, Config> configProvider;
     private final File holderBaseFolder;
-    private final FlatEntryConverter<K, V> converter;
 
     public ConfigStorageSupplier(
             Executor mainThreadExecutor,
             UnaryOperator<String> configNameProvider,
             Function<File, Config> configProvider,
-            File holderBaseFolder,
-            FlatEntryConverter<K, V> converter
+            File holderBaseFolder
     ) {
         this.mainThreadExecutor = mainThreadExecutor;
         this.configNameProvider = configNameProvider;
         this.configProvider = configProvider;
         this.holderBaseFolder = holderBaseFolder;
-        this.converter = converter;
     }
 
     @Override
-    public DataStorage<K, V> getStorage(String name) {
+    public <K, V> DataStorage<K, V> getStorage(String name, DataStorageSetting<K, V> setting) {
+        FlatEntryConverter<K, V> converter = setting.getFlatEntryConverter();
+
         return new DataStorage<K, V>() {
             private final Config config = configProvider.apply(new File(holderBaseFolder, configNameProvider.apply(name)));
 

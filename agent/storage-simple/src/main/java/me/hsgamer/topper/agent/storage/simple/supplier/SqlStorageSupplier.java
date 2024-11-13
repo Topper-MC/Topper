@@ -7,6 +7,7 @@ import me.hsgamer.hscore.logger.common.Logger;
 import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.agent.storage.DataStorage;
 import me.hsgamer.topper.agent.storage.simple.converter.SqlEntryConverter;
+import me.hsgamer.topper.agent.storage.simple.setting.DataStorageSetting;
 import org.intellij.lang.annotations.Language;
 
 import java.sql.Connection;
@@ -19,13 +20,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public abstract class SqlStorageSupplier<K, V> implements DataStorageSupplier<K, V> {
+public abstract class SqlStorageSupplier implements DataStorageSupplier {
     protected final Logger logger = LoggerProvider.getLogger(getClass());
-    private final SqlEntryConverter<K, V> converter;
-
-    protected SqlStorageSupplier(SqlEntryConverter<K, V> converter) {
-        this.converter = converter;
-    }
 
     protected abstract Connection getConnection() throws SQLException;
 
@@ -37,7 +33,9 @@ public abstract class SqlStorageSupplier<K, V> implements DataStorageSupplier<K,
     protected abstract Object[] toSaveValues(Object[] keys, Object[] values);
 
     @Override
-    public DataStorage<K, V> getStorage(String name) {
+    public <K, V> DataStorage<K, V> getStorage(String name, DataStorageSetting<K, V> setting) {
+        SqlEntryConverter<K, V> converter = setting.getSqlEntryConverter();
+
         return new DataStorage<K, V>() {
             @Override
             public Map<K, V> load() {

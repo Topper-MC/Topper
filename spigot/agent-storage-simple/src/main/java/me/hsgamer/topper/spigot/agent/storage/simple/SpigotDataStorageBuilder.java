@@ -9,10 +9,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.concurrent.Executor;
 
 public class SpigotDataStorageBuilder {
-    public static <K, V> void register(JavaPlugin plugin, DataStorageBuilder<K, V> builder) {
+    public static void register(JavaPlugin plugin, DataStorageBuilder builder) {
         Executor mainThreadExecutor = runnable -> GlobalScheduler.get(plugin).run(runnable);
 
-        builder.register(setting -> new ConfigStorageSupplier<>(mainThreadExecutor, name -> name + ".yml", BukkitConfig::new, setting.getBaseFolder(), setting.getFlatEntryConverter()), "config", "yaml", "yml");
-        builder.register(setting -> new ConfigStorageSupplier<>(mainThreadExecutor, name -> name + ".json", BukkitConfig::new, setting.getBaseFolder(), setting.getFlatEntryConverter()), "json");
+        builder.register(setting -> new ConfigStorageSupplier(mainThreadExecutor, name -> name + ".yml", BukkitConfig::new, setting.getBaseFolder()), "config", "yaml", "yml");
+        builder.register(setting -> new ConfigStorageSupplier(mainThreadExecutor, name -> name + ".json", BukkitConfig::new, setting.getBaseFolder()), "json");
     }
 }

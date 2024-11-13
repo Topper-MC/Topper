@@ -4,19 +4,17 @@ import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.hscore.database.client.sql.java.JavaSqlClient;
 import me.hsgamer.hscore.database.driver.sqlite.SqliteFileDriver;
 import me.hsgamer.hscore.logger.common.LogLevel;
-import me.hsgamer.topper.agent.storage.simple.converter.SqlEntryConverter;
 import me.hsgamer.topper.agent.storage.simple.setting.DatabaseSetting;
 
 import java.io.File;
 import java.sql.Connection;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class SqliteStorageSupplier<K, V> extends SqlStorageSupplier<K, V> {
+public class SqliteStorageSupplier extends SqlStorageSupplier {
     private final JavaSqlClient client;
     private final AtomicReference<Connection> connectionReference = new AtomicReference<>();
 
-    public SqliteStorageSupplier(DatabaseSetting databaseSetting, File baseHolder, SqlEntryConverter<K, V> converter) {
-        super(converter);
+    public SqliteStorageSupplier(DatabaseSetting databaseSetting, File baseHolder) {
         client = new JavaSqlClient(Setting.create(new SqliteFileDriver(baseHolder)).setDatabaseName(databaseSetting.getDatabase()));
     }
 

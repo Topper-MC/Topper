@@ -4,17 +4,15 @@ import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.hscore.database.client.sql.java.JavaSqlClient;
 import me.hsgamer.hscore.database.driver.mysql.MySqlDriver;
 import me.hsgamer.hscore.logger.common.LogLevel;
-import me.hsgamer.topper.agent.storage.simple.converter.SqlEntryConverter;
 import me.hsgamer.topper.agent.storage.simple.setting.DatabaseSetting;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class MySqlStorageSupplier<K, V> extends SqlStorageSupplier<K, V> {
+public class MySqlStorageSupplier extends SqlStorageSupplier {
     private final JavaSqlClient client;
 
-    public MySqlStorageSupplier(DatabaseSetting databaseSetting, SqlEntryConverter<K, V> converter) {
-        super(converter);
+    public MySqlStorageSupplier(DatabaseSetting databaseSetting) {
         Setting setting = Setting.create(new MySqlDriver())
                 .setDatabaseName(databaseSetting.getDatabase())
                 .setHost(databaseSetting.getHost())

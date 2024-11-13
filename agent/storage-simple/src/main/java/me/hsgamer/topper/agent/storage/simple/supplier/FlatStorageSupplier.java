@@ -5,6 +5,7 @@ import me.hsgamer.hscore.logger.common.Logger;
 import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.agent.storage.DataStorage;
 import me.hsgamer.topper.agent.storage.simple.converter.FlatEntryConverter;
+import me.hsgamer.topper.agent.storage.simple.setting.DataStorageSetting;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,18 +18,17 @@ import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-public class FlatStorageSupplier<K, V> implements DataStorageSupplier<K, V> {
+public class FlatStorageSupplier implements DataStorageSupplier {
     private final Logger logger = LoggerProvider.getLogger(getClass());
     private final File baseFolder;
-    private final FlatEntryConverter<K, V> converter;
 
-    public FlatStorageSupplier(File baseFolder, FlatEntryConverter<K, V> converter) {
+    public FlatStorageSupplier(File baseFolder) {
         this.baseFolder = baseFolder;
-        this.converter = converter;
     }
 
     @Override
-    public DataStorage<K, V> getStorage(String name) {
+    public <K, V> DataStorage<K, V> getStorage(String name, DataStorageSetting<K, V> setting) {
+        FlatEntryConverter<K, V> converter = setting.getFlatEntryConverter();
         Properties properties = new Properties();
         File file = new File(baseFolder, name + ".properties");
         Runnable loadRunnable = () -> {

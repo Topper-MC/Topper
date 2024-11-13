@@ -39,7 +39,7 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
         });
         this.valueDisplay = new ValueDisplay(map);
 
-        this.storageAgent = new StorageAgent<>(instance.getLogger(), this, instance.get(TopManager.class).getStorageSupplier().getStorage(name));
+        this.storageAgent = new StorageAgent<>(instance.getLogger(), this, instance.get(TopManager.class).buildStorage(name));
         storageAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskSaveEntryPerTick());
         addAgent(new SpigotRunnableAgent<>(storageAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskSaveDelay()));
 

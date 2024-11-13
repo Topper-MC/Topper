@@ -6,7 +6,8 @@ import me.hsgamer.hscore.bukkit.config.BukkitConfig;
 import me.hsgamer.hscore.bukkit.utils.MessageUtils;
 import me.hsgamer.hscore.checker.spigotmc.SpigotVersionChecker;
 import me.hsgamer.hscore.config.proxy.ConfigGenerator;
-import me.hsgamer.topper.spigot.plugin.builder.TopStorageBuilder;
+import me.hsgamer.topper.agent.storage.simple.builder.DataStorageBuilder;
+import me.hsgamer.topper.spigot.agent.storage.simple.SpigotDataStorageBuilder;
 import me.hsgamer.topper.spigot.plugin.builder.ValueProviderBuilder;
 import me.hsgamer.topper.spigot.plugin.command.GetTopListCommand;
 import me.hsgamer.topper.spigot.plugin.command.ReloadCommand;
@@ -26,7 +27,7 @@ public class TopperPlugin extends BasePlugin {
     @Override
     protected List<Object> getComponents() {
         return Arrays.asList(
-                new TopStorageBuilder(this),
+                new DataStorageBuilder(),
                 new ValueProviderBuilder(),
                 ConfigGenerator.newInstance(MainConfig.class, new BukkitConfig(this)),
                 ConfigGenerator.newInstance(MessageConfig.class, new BukkitConfig(this, "messages.yml")),
@@ -48,6 +49,7 @@ public class TopperPlugin extends BasePlugin {
     @Override
     public void load() {
         MessageUtils.setPrefix(get(MessageConfig.class)::getPrefix);
+        SpigotDataStorageBuilder.register(this, get(DataStorageBuilder.class));
     }
 
     @Override

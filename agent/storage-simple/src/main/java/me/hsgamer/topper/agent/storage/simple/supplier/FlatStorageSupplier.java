@@ -19,18 +19,18 @@ import java.util.function.Supplier;
 
 public class FlatStorageSupplier<K, V> implements DataStorageSupplier<K, V> {
     private final Logger logger = LoggerProvider.getLogger(getClass());
-    private final File holderBaseFolder;
+    private final File baseFolder;
     private final FlatEntryConverter<K, V> converter;
 
-    public FlatStorageSupplier(File holderBaseFolder, FlatEntryConverter<K, V> converter) {
-        this.holderBaseFolder = holderBaseFolder;
+    public FlatStorageSupplier(File baseFolder, FlatEntryConverter<K, V> converter) {
+        this.baseFolder = baseFolder;
         this.converter = converter;
     }
 
     @Override
     public DataStorage<K, V> getStorage(String name) {
         Properties properties = new Properties();
-        File file = new File(holderBaseFolder, name + ".properties");
+        File file = new File(baseFolder, name + ".properties");
         Runnable loadRunnable = () -> {
             try {
                 if (!file.exists()) {

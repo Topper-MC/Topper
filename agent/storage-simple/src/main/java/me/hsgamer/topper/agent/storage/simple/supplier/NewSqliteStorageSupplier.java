@@ -6,8 +6,8 @@ import me.hsgamer.topper.agent.storage.simple.setting.DatabaseSetting;
 import java.io.File;
 
 public class NewSqliteStorageSupplier<K, V> extends SqliteStorageSupplier<K, V> {
-    public NewSqliteStorageSupplier(DatabaseSetting databaseSetting, File holderBaseFolder, SqlEntryConverter<K, V> converter) {
-        super(databaseSetting, holderBaseFolder, converter);
+    public NewSqliteStorageSupplier(DatabaseSetting databaseSetting, File baseFolder, SqlEntryConverter<K, V> converter) {
+        super(databaseSetting, baseFolder, converter);
     }
 
     @Override

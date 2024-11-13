@@ -15,9 +15,9 @@ public class SqliteStorageSupplier<K, V> extends SqlStorageSupplier<K, V> {
     private final JavaSqlClient client;
     private final AtomicReference<Connection> connectionReference = new AtomicReference<>();
 
-    public SqliteStorageSupplier(DatabaseSetting databaseSetting, File holderBaseFolder, SqlEntryConverter<K, V> converter) {
+    public SqliteStorageSupplier(DatabaseSetting databaseSetting, File baseHolder, SqlEntryConverter<K, V> converter) {
         super(converter);
-        client = new JavaSqlClient(Setting.create(new SqliteFileDriver(holderBaseFolder)).setDatabaseName(databaseSetting.getDatabase()));
+        client = new JavaSqlClient(Setting.create(new SqliteFileDriver(baseHolder)).setDatabaseName(databaseSetting.getDatabase()));
     }
 
     @Override

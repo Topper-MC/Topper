@@ -9,22 +9,11 @@
         <version>3.2.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>topper-agent</artifactId>
+    <artifactId>topper-storage</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>storage</module>
-        <module>snapshot</module>
-        <module>update</module>
-        <module>runnable</module>
         <module>core</module>
-        <module>holder</module>
+        <module>simple</module>
+        <module>number</module>
     </modules>
-
-    <dependencies>
-        <dependency>
-            <groupId>me.hsgamer</groupId>
-            <artifactId>topper-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
 </project>

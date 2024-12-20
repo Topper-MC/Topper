@@ -1,5 +1,6 @@
 #!/bin/bash
 UPDATE_DIR="
+storage
 agent
 query
 spigot

@@ -5,21 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>me.hsgamer</groupId>
-        <artifactId>topper-agent</artifactId>
+        <artifactId>topper-storage</artifactId>
         <version>3.2.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>topper-agent-storage</artifactId>
+    <artifactId>topper-storage-number</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>me.hsgamer</groupId>
-            <artifactId>topper-agent-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>me.hsgamer</groupId>
-            <artifactId>topper-storage-core</artifactId>
+            <artifactId>topper-storage-simple</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

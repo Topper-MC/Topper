@@ -81,7 +81,7 @@
     <repositories>
         <repository>
             <id>placeholderapi</id>
-            <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
+            <url>https://repo.extendedclip.com/releases/</url>
         </repository>
     </repositories>
 
@@ -103,6 +103,11 @@
         </dependency>
         <dependency>
             <groupId>me.hsgamer</groupId>
+            <artifactId>topper-agent-storage</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
             <artifactId>topper-spigot-agent-runnable</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -113,12 +118,12 @@
         </dependency>
         <dependency>
             <groupId>me.hsgamer</groupId>
-            <artifactId>topper-spigot-agent-storage-simple</artifactId>
+            <artifactId>topper-spigot-storage-simple</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>me.hsgamer</groupId>
-            <artifactId>topper-agent-storage-number</artifactId>
+            <artifactId>topper-storage-number</artifactId>
             <version>${project.version}</version>
         </dependency>
 

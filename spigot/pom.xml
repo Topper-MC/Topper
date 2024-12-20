@@ -13,7 +13,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>agent-runnable</module>
-        <module>agent-storage-simple</module>
+        <module>storage-simple</module>
         <module>plugin</module>
     </modules>
 

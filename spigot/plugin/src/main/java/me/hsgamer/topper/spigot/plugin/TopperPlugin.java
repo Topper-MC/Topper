@@ -6,8 +6,6 @@ import me.hsgamer.hscore.bukkit.config.BukkitConfig;
 import me.hsgamer.hscore.bukkit.utils.MessageUtils;
 import me.hsgamer.hscore.checker.spigotmc.SpigotVersionChecker;
 import me.hsgamer.hscore.config.proxy.ConfigGenerator;
-import me.hsgamer.topper.agent.storage.simple.builder.DataStorageBuilder;
-import me.hsgamer.topper.spigot.agent.storage.simple.SpigotDataStorageBuilder;
 import me.hsgamer.topper.spigot.plugin.builder.ValueProviderBuilder;
 import me.hsgamer.topper.spigot.plugin.command.GetTopListCommand;
 import me.hsgamer.topper.spigot.plugin.command.ReloadCommand;
@@ -17,6 +15,8 @@ import me.hsgamer.topper.spigot.plugin.hook.HookSystem;
 import me.hsgamer.topper.spigot.plugin.listener.JoinListener;
 import me.hsgamer.topper.spigot.plugin.manager.TopManager;
 import me.hsgamer.topper.spigot.plugin.manager.TopQueryManager;
+import me.hsgamer.topper.spigot.storage.simple.SpigotDataStorageBuilder;
+import me.hsgamer.topper.storage.simple.builder.DataStorageBuilder;
 import org.bstats.bukkit.Metrics;
 
 import java.util.Arrays;

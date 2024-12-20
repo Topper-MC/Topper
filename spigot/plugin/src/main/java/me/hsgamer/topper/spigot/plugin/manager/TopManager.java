@@ -3,27 +3,28 @@ package me.hsgamer.topper.spigot.plugin.manager;
 import io.github.projectunified.minelib.plugin.base.Loadable;
 import me.hsgamer.hscore.bukkit.config.BukkitConfig;
 import me.hsgamer.hscore.config.proxy.ConfigGenerator;
-import me.hsgamer.topper.agent.storage.DataStorage;
-import me.hsgamer.topper.agent.storage.number.FlatNumberEntryConverter;
-import me.hsgamer.topper.agent.storage.number.MapNumberEntryConverter;
-import me.hsgamer.topper.agent.storage.number.SqlNumberEntryConverter;
-import me.hsgamer.topper.agent.storage.simple.builder.DataStorageBuilder;
-import me.hsgamer.topper.agent.storage.simple.converter.FlatEntryConverter;
-import me.hsgamer.topper.agent.storage.simple.converter.MapEntryConverter;
-import me.hsgamer.topper.agent.storage.simple.converter.SqlEntryConverter;
-import me.hsgamer.topper.agent.storage.simple.setting.DataStorageBuilderSetting;
-import me.hsgamer.topper.agent.storage.simple.setting.DataStorageSetting;
-import me.hsgamer.topper.agent.storage.simple.setting.DatabaseSetting;
-import me.hsgamer.topper.agent.storage.simple.supplier.DataStorageSupplier;
+import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 import me.hsgamer.topper.spigot.plugin.config.DatabaseConfig;
 import me.hsgamer.topper.spigot.plugin.config.MainConfig;
 import me.hsgamer.topper.spigot.plugin.holder.NumberTopHolder;
+import me.hsgamer.topper.storage.core.DataStorage;
+import me.hsgamer.topper.storage.number.FlatNumberEntryConverter;
+import me.hsgamer.topper.storage.number.MapNumberEntryConverter;
+import me.hsgamer.topper.storage.number.SqlNumberEntryConverter;
+import me.hsgamer.topper.storage.simple.builder.DataStorageBuilder;
+import me.hsgamer.topper.storage.simple.converter.FlatEntryConverter;
+import me.hsgamer.topper.storage.simple.converter.MapEntryConverter;
+import me.hsgamer.topper.storage.simple.converter.SqlEntryConverter;
+import me.hsgamer.topper.storage.simple.setting.DataStorageBuilderSetting;
+import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
+import me.hsgamer.topper.storage.simple.supplier.DataStorageSupplier;
 
 import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class TopManager implements Loadable {
     private final Map<String, NumberTopHolder> topHolders = new HashMap<>();
@@ -40,8 +41,8 @@ public class TopManager implements Loadable {
                 instance.get(MainConfig.class).getStorageType(),
                 new DataStorageBuilderSetting() {
                     @Override
-                    public DatabaseSetting getDatabaseSetting() {
-                        return ConfigGenerator.newInstance(DatabaseConfig.class, new BukkitConfig(instance, "database.yml")).toDatabaseSetting();
+                    public Consumer<Setting> getDatabaseSettingModifier() {
+                        return ConfigGenerator.newInstance(DatabaseConfig.class, new BukkitConfig(instance, "database.yml"));
                     }
 
                     @Override

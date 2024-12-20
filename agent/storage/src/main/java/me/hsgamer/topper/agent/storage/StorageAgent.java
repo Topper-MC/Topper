@@ -3,6 +3,7 @@ package me.hsgamer.topper.agent.storage;
 import me.hsgamer.topper.agent.core.Agent;
 import me.hsgamer.topper.core.DataEntry;
 import me.hsgamer.topper.core.DataHolder;
+import me.hsgamer.topper.storage.core.DataStorage;
 
 import java.util.AbstractMap;
 import java.util.HashMap;

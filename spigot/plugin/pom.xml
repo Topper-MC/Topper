@@ -35,6 +35,13 @@
                             <minimizeJar>false</minimizeJar>
                             <relocations>
                                 <relocation>
+                                    <pattern>me.hsgamer.topper</pattern>
+                                    <shadedPattern>me.hsgamer.topper.spigot.plugin.lib.topper</shadedPattern>
+                                    <excludes>
+                                        <exclude>me.hsgamer.topper.spigot.plugin.**</exclude>
+                                    </excludes>
+                                </relocation>
+                                <relocation>
                                     <pattern>me.hsgamer.hscore</pattern>
                                     <shadedPattern>me.hsgamer.topper.spigot.plugin.lib.core</shadedPattern>
                                 </relocation>

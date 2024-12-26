@@ -64,7 +64,9 @@ public class FlatStorageSupplier implements DataStorageSupplier {
                 properties.forEach((key, value) -> {
                     K k = converter.toKey(key.toString());
                     V v = converter.toValue(value.toString());
-                    map.put(k, v);
+                    if (k != null && v != null) {
+                        map.put(k, v);
+                    }
                 });
                 return map;
             }

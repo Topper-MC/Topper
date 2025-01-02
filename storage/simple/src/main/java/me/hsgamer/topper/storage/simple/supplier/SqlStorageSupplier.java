@@ -12,10 +12,7 @@ import org.intellij.lang.annotations.Language;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.AbstractMap;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -132,6 +129,48 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     return CompletableFuture.supplyAsync(supplier);
                 } else {
                     return CompletableFuture.completedFuture(supplier.get());
+                }
+            }
+
+            @Override
+            public CompletableFuture<Void> remove(Collection<K> keys, boolean urgent) {
+                Runnable runnable = () -> {
+                    Connection connection = null;
+                    try {
+                        connection = getConnection();
+                        String[] keyColumns = converter.getKeyColumns();
+
+                        StringBuilder statement = new StringBuilder("DELETE FROM `")
+                                .append(name)
+                                .append("` WHERE ");
+                        for (int i = 0; i < keyColumns.length; i++) {
+                            statement.append("`")
+                                    .append(keyColumns[i])
+                                    .append("` = ?");
+                            if (i != keyColumns.length - 1) {
+                                statement.append(" AND ");
+                            }
+                        }
+
+                        BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.toString());
+                        keys.forEach(key -> {
+                            Object[] keyValues = converter.toKeyQueryValues(key);
+                            batchBuilder.addValues(keyValues);
+                        });
+                        batchBuilder.execute();
+                    } catch (SQLException e) {
+                        logger.log(LogLevel.ERROR, "Failed to remove top holder", e);
+                    } finally {
+                        if (connection != null) {
+                            flushConnection(connection);
+                        }
+                    }
+                };
+                if (urgent) {
+                    return CompletableFuture.runAsync(runnable);
+                } else {
+                    runnable.run();
+                    return CompletableFuture.completedFuture(null);
                 }
             }
 

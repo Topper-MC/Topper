@@ -7,6 +7,7 @@ import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
 import me.hsgamer.topper.storage.simple.supplier.DataStorageSupplier;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -70,6 +71,18 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
             public CompletableFuture<Optional<V>> load(K key, boolean urgent) {
                 return CompletableFuture.supplyAsync(
                         () -> Optional.ofNullable(config.get(converter.toRawKey(key))).map(String::valueOf).map(converter::toValue),
+                        urgent ? Runnable::run : mainThreadExecutor
+                );
+            }
+
+            @Override
+            public CompletableFuture<Void> remove(Collection<K> keys, boolean urgent) {
+                return CompletableFuture.supplyAsync(
+                        () -> {
+                            keys.forEach(key -> config.remove(converter.toRawKey(key)));
+                            config.save();
+                            return null;
+                        },
                         urgent ? Runnable::run : mainThreadExecutor
                 );
             }

@@ -5,10 +5,8 @@ import me.hsgamer.topper.core.DataEntry;
 import me.hsgamer.topper.core.DataHolder;
 import me.hsgamer.topper.storage.core.DataStorage;
 
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -19,7 +17,7 @@ public class StorageAgent<K, V> implements Agent<K, V>, Runnable {
     private final Logger logger;
     private final DataHolder<K, V> holder;
     private final DataStorage<K, V> storage;
-    private final Queue<Map.Entry<K, V>> queue = new ConcurrentLinkedQueue<>();
+    private final Queue<Map.Entry<K, V>> queue = new ConcurrentLinkedQueue<>(); // Value can be null representing removal
     private final AtomicReference<Map<K, V>> savingMap = new AtomicReference<>();
     private final AtomicBoolean saving = new AtomicBoolean(false);
     private int maxEntryPerCall = 10;
@@ -54,14 +52,32 @@ public class StorageAgent<K, V> implements Agent<K, V>, Runnable {
             return;
         }
 
-        storage.save(map, urgent).whenComplete((v, throwable) -> {
-            if (throwable != null) {
-                logger.log(Level.SEVERE, "Failed to save entries for " + holder.getName(), throwable);
+        Map<K, V> finalMap = new HashMap<>();
+        Set<K> removeKeys = new HashSet<>();
+        for (Map.Entry<K, V> entry : map.entrySet()) {
+            if (entry.getValue() == null) {
+                removeKeys.add(entry.getKey());
             } else {
-                savingMap.set(null);
+                finalMap.put(entry.getKey(), entry.getValue());
             }
-            saving.set(false);
-        });
+        }
+
+        storage.save(finalMap, urgent)
+                .thenCompose(v -> {
+                    if (removeKeys.isEmpty()) {
+                        return CompletableFuture.completedFuture(null);
+                    } else {
+                        return storage.remove(removeKeys, urgent);
+                    }
+                })
+                .whenComplete((v, throwable) -> {
+                    if (throwable != null) {
+                        logger.log(Level.SEVERE, "Failed to save entries for " + holder.getName(), throwable);
+                    } else {
+                        savingMap.set(null);
+                    }
+                    saving.set(false);
+                });
     }
 
     @Override
@@ -87,6 +103,11 @@ public class StorageAgent<K, V> implements Agent<K, V>, Runnable {
     @Override
     public void onUpdate(DataEntry<K, V> entry) {
         queue.add(new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue()));
+    }
+
+    @Override
+    public void onRemove(DataEntry<K, V> entry) {
+        queue.add(new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), null));
     }
 
     @Override

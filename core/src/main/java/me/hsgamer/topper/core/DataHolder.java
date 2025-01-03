@@ -23,7 +23,7 @@ public class DataHolder<K, V> {
     protected void onRemove(DataEntry<K, V> entry) {
     }
 
-    protected void onUpdate(DataEntry<K, V> entry) {
+    protected void onUpdate(DataEntry<K, V> entry, V oldValue) {
     }
 
     public final String getName() {

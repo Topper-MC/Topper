@@ -32,8 +32,9 @@ public final class DataEntry<K, V> {
 
     public void setValue(V value, boolean notify) {
         if (Objects.equals(this.value, value)) return;
+        V oldValue = this.value;
         this.value = value;
-        if (notify) holder.onUpdate(this);
+        if (notify) holder.onUpdate(this, oldValue);
     }
 
     public void setValue(UnaryOperator<V> operator, boolean notify) {

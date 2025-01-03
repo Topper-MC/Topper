@@ -13,18 +13,20 @@ public class GenericEntryUpdateEvent extends Event {
     private final String group;
     private final String holder;
     private final UUID uuid;
+    private final @Nullable Double oldValue;
     private final @Nullable Double value;
 
-    public GenericEntryUpdateEvent(String group, String holder, UUID uuid, @Nullable Double value, boolean async) {
+    public GenericEntryUpdateEvent(String group, String holder, UUID uuid, @Nullable Double oldValue, @Nullable Double value, boolean async) {
         super(async);
         this.group = group;
         this.holder = holder;
         this.uuid = uuid;
+        this.oldValue = oldValue;
         this.value = value;
     }
 
-    public GenericEntryUpdateEvent(String holder, UUID uuid, @Nullable Double value, boolean async) {
-        this(DEFAULT_GROUP, holder, uuid, value, async);
+    public GenericEntryUpdateEvent(String holder, UUID uuid, @Nullable Double oldValue, @Nullable Double value, boolean async) {
+        this(DEFAULT_GROUP, holder, uuid, oldValue, value, async);
     }
 
     public static HandlerList getHandlerList() {
@@ -41,6 +43,10 @@ public class GenericEntryUpdateEvent extends Event {
 
     public UUID getUuid() {
         return uuid;
+    }
+
+    public @Nullable Double getOldValue() {
+        return oldValue;
     }
 
     public @Nullable Double getValue() {

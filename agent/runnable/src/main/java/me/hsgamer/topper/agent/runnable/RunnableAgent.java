@@ -1,14 +1,13 @@
 package me.hsgamer.topper.agent.runnable;
 
 import me.hsgamer.topper.agent.core.Agent;
-import me.hsgamer.topper.core.DataEntry;
 
-public abstract class RunnableAgent<K, V, A extends Agent<K, V> & Runnable> implements Agent<K, V> {
-    private final A agent;
+public abstract class RunnableAgent implements Agent {
+    private final Runnable runnable;
     private Runnable cancelTaskRunnable;
 
-    public RunnableAgent(A agent) {
-        this.agent = agent;
+    public RunnableAgent(Runnable runnable) {
+        this.runnable = runnable;
     }
 
     /**
@@ -21,8 +20,7 @@ public abstract class RunnableAgent<K, V, A extends Agent<K, V> & Runnable> impl
 
     @Override
     public void start() {
-        agent.start();
-        cancelTaskRunnable = run(agent);
+        cancelTaskRunnable = run(runnable);
     }
 
     @Override
@@ -30,35 +28,5 @@ public abstract class RunnableAgent<K, V, A extends Agent<K, V> & Runnable> impl
         if (cancelTaskRunnable != null) {
             cancelTaskRunnable.run();
         }
-        agent.stop();
-    }
-
-    @Override
-    public void beforeStop() {
-        agent.beforeStop();
-    }
-
-    @Override
-    public void onCreate(DataEntry<K, V> entry) {
-        agent.onCreate(entry);
-    }
-
-    @Override
-    public void onUpdate(DataEntry<K, V> entry) {
-        agent.onUpdate(entry);
-    }
-
-    @Override
-    public void onRemove(DataEntry<K, V> entry) {
-        agent.onRemove(entry);
-    }
-
-    @Override
-    public void onUnregister(DataEntry<K, V> entry) {
-        agent.onUnregister(entry);
-    }
-
-    public A getAgent() {
-        return agent;
     }
 }

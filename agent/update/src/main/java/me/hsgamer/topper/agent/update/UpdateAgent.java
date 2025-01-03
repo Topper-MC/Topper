@@ -1,6 +1,6 @@
 package me.hsgamer.topper.agent.update;
 
-import me.hsgamer.topper.agent.core.Agent;
+import me.hsgamer.topper.agent.core.DataEntryAgent;
 import me.hsgamer.topper.core.DataEntry;
 import me.hsgamer.topper.core.DataHolder;
 
@@ -12,7 +12,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class UpdateAgent<K, V> implements Agent<K, V>, Runnable {
+public class UpdateAgent<K, V> implements DataEntryAgent<K, V>, Runnable {
     private final Logger logger;
     private final Queue<K> updateQueue = new ConcurrentLinkedQueue<>();
     private final DataHolder<K, V> holder;

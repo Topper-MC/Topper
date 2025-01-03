@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class SnapshotAgent<K, V> implements Agent<K, V>, Runnable {
+public class SnapshotAgent<K, V> implements Agent, Runnable {
     private final AtomicReference<List<Map.Entry<K, V>>> topSnapshot = new AtomicReference<>(Collections.emptyList());
     private final AtomicReference<Map<K, Integer>> indexMap = new AtomicReference<>(Collections.emptyMap());
     private final DataHolder<K, V> holder;

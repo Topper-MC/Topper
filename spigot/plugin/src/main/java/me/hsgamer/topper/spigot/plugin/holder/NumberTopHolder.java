@@ -3,6 +3,7 @@ package me.hsgamer.topper.spigot.plugin.holder;
 import io.github.projectunified.minelib.scheduler.async.AsyncScheduler;
 import io.github.projectunified.minelib.scheduler.global.GlobalScheduler;
 import me.hsgamer.topper.agent.core.Agent;
+import me.hsgamer.topper.agent.core.DataEntryAgent;
 import me.hsgamer.topper.agent.holder.AgentDataHolder;
 import me.hsgamer.topper.agent.snapshot.SnapshotAgent;
 import me.hsgamer.topper.agent.storage.StorageAgent;
@@ -41,18 +42,22 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
 
         this.storageAgent = new StorageAgent<>(instance.getLogger(), this, instance.get(TopManager.class).buildStorage(name));
         storageAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskSaveEntryPerTick());
-        addAgent(new SpigotRunnableAgent<>(storageAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskSaveDelay()));
+        addAgent(storageAgent);
+        addEntryAgent(storageAgent);
+        addAgent(new SpigotRunnableAgent(storageAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskSaveDelay()));
 
         this.updateAgent = new UpdateAgent<>(instance.getLogger(), this, valueProvider::getValue);
         updateAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskUpdateEntryPerTick());
-        addAgent(new SpigotRunnableAgent<>(updateAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
+        addEntryAgent(updateAgent);
+        addAgent(new SpigotRunnableAgent(updateAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
 
         this.snapshotAgent = new SnapshotAgent<>(this);
         boolean reverseOrder = Optional.ofNullable(map.get("reverse")).map(String::valueOf).map(Boolean::parseBoolean).orElse(true);
         snapshotAgent.setComparator(reverseOrder ? Comparator.reverseOrder() : Comparator.naturalOrder());
-        addAgent(new SpigotRunnableAgent<>(snapshotAgent, AsyncScheduler.get(instance), 20L));
+        addAgent(snapshotAgent);
+        addAgent(new SpigotRunnableAgent(snapshotAgent, AsyncScheduler.get(instance), 20L));
 
-        addAgent(new Agent<UUID, Double>() {
+        addAgent(new Agent() {
             @Override
             public void start() {
                 if (instance.get(MainConfig.class).isLoadAllOfflinePlayers()) {
@@ -63,7 +68,8 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
                     });
                 }
             }
-
+        });
+        addEntryAgent(new DataEntryAgent<UUID, Double>() {
             @Override
             public void onUpdate(DataEntry<UUID, Double> entry) {
                 Bukkit.getPluginManager().callEvent(new GenericEntryUpdateEvent(name, entry.getKey(), entry.getValue(), true));

@@ -1,6 +1,7 @@
 package me.hsgamer.topper.agent.storage;
 
 import me.hsgamer.topper.agent.core.Agent;
+import me.hsgamer.topper.agent.core.DataEntryAgent;
 import me.hsgamer.topper.core.DataEntry;
 import me.hsgamer.topper.core.DataHolder;
 import me.hsgamer.topper.storage.core.DataStorage;
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class StorageAgent<K, V> implements Agent<K, V>, Runnable {
+public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable {
     private final Logger logger;
     private final DataHolder<K, V> holder;
     private final DataStorage<K, V> storage;

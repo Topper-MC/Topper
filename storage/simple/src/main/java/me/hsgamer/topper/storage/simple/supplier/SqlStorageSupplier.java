@@ -86,10 +86,10 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     }
                 };
                 if (urgent) {
-                    return CompletableFuture.runAsync(runnable);
-                } else {
                     runnable.run();
                     return CompletableFuture.completedFuture(null);
+                } else {
+                    return CompletableFuture.runAsync(runnable);
                 }
             }
 
@@ -130,9 +130,9 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     }
                 };
                 if (urgent) {
-                    return CompletableFuture.supplyAsync(supplier);
-                } else {
                     return CompletableFuture.completedFuture(supplier.get());
+                } else {
+                    return CompletableFuture.supplyAsync(supplier);
                 }
             }
 
@@ -171,10 +171,10 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     }
                 };
                 if (urgent) {
-                    return CompletableFuture.runAsync(runnable);
-                } else {
                     runnable.run();
                     return CompletableFuture.completedFuture(null);
+                } else {
+                    return CompletableFuture.runAsync(runnable);
                 }
             }
 

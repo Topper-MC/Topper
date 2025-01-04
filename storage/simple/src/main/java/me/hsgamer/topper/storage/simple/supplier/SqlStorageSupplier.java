@@ -12,8 +12,6 @@ import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public abstract class SqlStorageSupplier implements DataStorageSupplier {
@@ -53,128 +51,105 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             }
 
             @Override
-            public CompletableFuture<Void> save(Map<K, V> map, boolean urgent) {
-                Runnable runnable = () -> {
-                    Connection connection = null;
-                    try {
-                        connection = getConnection();
-                        String[] keyColumns = converter.getKeyColumns();
-                        String[] valueColumns = converter.getValueColumns();
+            public void save(Map<K, V> map) {
+                Connection connection = null;
+                try {
+                    connection = getConnection();
+                    String[] keyColumns = converter.getKeyColumns();
+                    String[] valueColumns = converter.getValueColumns();
 
-                        List<String> statement = toSaveStatement(name, keyColumns, valueColumns);
-                        List<List<Object[]>> values = new ArrayList<>();
+                    List<String> statement = toSaveStatement(name, keyColumns, valueColumns);
+                    List<List<Object[]>> values = new ArrayList<>();
 
-                        map.forEach((key, value) -> {
-                            Object[] keyValues = converter.toKeyQueryValues(key);
-                            Object[] valueValues = converter.toValueQueryValues(value);
-                            values.add(toSaveValues(keyValues, valueValues));
-                        });
-
-                        for (int i = 0; i < statement.size(); i++) {
-                            BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.get(i));
-                            for (List<Object[]> value : values) {
-                                batchBuilder.addValues(value.get(i));
-                            }
-                            batchBuilder.execute();
-                        }
-                    } catch (SQLException e) {
-                        logger.log(LogLevel.ERROR, "Failed to save top holder", e);
-                    } finally {
-                        if (connection != null) {
-                            flushConnection(connection);
-                        }
-                    }
-                };
-                if (urgent) {
-                    runnable.run();
-                    return CompletableFuture.completedFuture(null);
-                } else {
-                    return CompletableFuture.runAsync(runnable);
-                }
-            }
-
-            @Override
-            public CompletableFuture<Optional<V>> load(K key, boolean urgent) {
-                Supplier<Optional<V>> supplier = () -> {
-                    Connection connection = null;
-                    try {
-                        connection = getConnection();
-                        String[] keyColumns = converter.getKeyColumns();
+                    map.forEach((key, value) -> {
                         Object[] keyValues = converter.toKeyQueryValues(key);
+                        Object[] valueValues = converter.toValueQueryValues(value);
+                        values.add(toSaveValues(keyValues, valueValues));
+                    });
 
-                        StringBuilder statement = new StringBuilder("SELECT * FROM `")
-                                .append(name)
-                                .append("` WHERE ");
-                        for (int i = 0; i < keyColumns.length; i++) {
-                            statement.append("`")
-                                    .append(keyColumns[i])
-                                    .append("` = ?");
-                            if (i != keyColumns.length - 1) {
-                                statement.append(" AND ");
-                            }
+                    for (int i = 0; i < statement.size(); i++) {
+                        BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.get(i));
+                        for (List<Object[]> value : values) {
+                            batchBuilder.addValues(value.get(i));
                         }
-                        return StatementBuilder.create(connection)
-                                .setStatement(statement.toString())
-                                .addValues(keyValues)
-                                .query(resultSet -> resultSet.next()
-                                        ? Optional.of(converter.getValue(resultSet))
-                                        : Optional.empty()
-                                );
-                    } catch (SQLException e) {
-                        logger.log(LogLevel.ERROR, "Failed to load top holder", e);
-                        return Optional.empty();
-                    } finally {
-                        if (connection != null) {
-                            flushConnection(connection);
-                        }
+                        batchBuilder.execute();
                     }
-                };
-                if (urgent) {
-                    return CompletableFuture.completedFuture(supplier.get());
-                } else {
-                    return CompletableFuture.supplyAsync(supplier);
+                } catch (SQLException e) {
+                    logger.log(LogLevel.ERROR, "Failed to save top holder", e);
+                } finally {
+                    if (connection != null) {
+                        flushConnection(connection);
+                    }
                 }
             }
 
             @Override
-            public CompletableFuture<Void> remove(Collection<K> keys, boolean urgent) {
-                Runnable runnable = () -> {
-                    Connection connection = null;
-                    try {
-                        connection = getConnection();
-                        String[] keyColumns = converter.getKeyColumns();
+            public Optional<V> load(K key) {
+                Connection connection = null;
+                try {
+                    connection = getConnection();
+                    String[] keyColumns = converter.getKeyColumns();
+                    Object[] keyValues = converter.toKeyQueryValues(key);
 
-                        StringBuilder statement = new StringBuilder("DELETE FROM `")
-                                .append(name)
-                                .append("` WHERE ");
-                        for (int i = 0; i < keyColumns.length; i++) {
-                            statement.append("`")
-                                    .append(keyColumns[i])
-                                    .append("` = ?");
-                            if (i != keyColumns.length - 1) {
-                                statement.append(" AND ");
-                            }
-                        }
-
-                        BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.toString());
-                        keys.forEach(key -> {
-                            Object[] keyValues = converter.toKeyQueryValues(key);
-                            batchBuilder.addValues(keyValues);
-                        });
-                        batchBuilder.execute();
-                    } catch (SQLException e) {
-                        logger.log(LogLevel.ERROR, "Failed to remove top holder", e);
-                    } finally {
-                        if (connection != null) {
-                            flushConnection(connection);
+                    StringBuilder statement = new StringBuilder("SELECT * FROM `")
+                            .append(name)
+                            .append("` WHERE ");
+                    for (int i = 0; i < keyColumns.length; i++) {
+                        statement.append("`")
+                                .append(keyColumns[i])
+                                .append("` = ?");
+                        if (i != keyColumns.length - 1) {
+                            statement.append(" AND ");
                         }
                     }
-                };
-                if (urgent) {
-                    runnable.run();
-                    return CompletableFuture.completedFuture(null);
-                } else {
-                    return CompletableFuture.runAsync(runnable);
+                    return StatementBuilder.create(connection)
+                            .setStatement(statement.toString())
+                            .addValues(keyValues)
+                            .query(resultSet -> resultSet.next()
+                                    ? Optional.of(converter.getValue(resultSet))
+                                    : Optional.empty()
+                            );
+                } catch (SQLException e) {
+                    logger.log(LogLevel.ERROR, "Failed to load top holder", e);
+                    return Optional.empty();
+                } finally {
+                    if (connection != null) {
+                        flushConnection(connection);
+                    }
+                }
+            }
+
+            @Override
+            public void remove(Collection<K> keys) {
+                Connection connection = null;
+                try {
+                    connection = getConnection();
+                    String[] keyColumns = converter.getKeyColumns();
+
+                    StringBuilder statement = new StringBuilder("DELETE FROM `")
+                            .append(name)
+                            .append("` WHERE ");
+                    for (int i = 0; i < keyColumns.length; i++) {
+                        statement.append("`")
+                                .append(keyColumns[i])
+                                .append("` = ?");
+                        if (i != keyColumns.length - 1) {
+                            statement.append(" AND ");
+                        }
+                    }
+
+                    BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.toString());
+                    keys.forEach(key -> {
+                        Object[] keyValues = converter.toKeyQueryValues(key);
+                        batchBuilder.addValues(keyValues);
+                    });
+                    batchBuilder.execute();
+                } catch (SQLException e) {
+                    logger.log(LogLevel.ERROR, "Failed to remove top holder", e);
+                } finally {
+                    if (connection != null) {
+                        flushConnection(connection);
+                    }
                 }
             }
 

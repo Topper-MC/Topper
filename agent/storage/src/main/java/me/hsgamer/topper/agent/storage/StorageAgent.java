@@ -63,22 +63,24 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
             }
         }
 
-        storage.save(finalMap, urgent)
-                .thenCompose(v -> {
-                    if (removeKeys.isEmpty()) {
-                        return CompletableFuture.completedFuture(null);
-                    } else {
-                        return storage.remove(removeKeys, urgent);
-                    }
-                })
-                .whenComplete((v, throwable) -> {
-                    if (throwable != null) {
-                        logger.log(Level.SEVERE, "Failed to save entries for " + holder.getName(), throwable);
-                    } else {
-                        savingMap.set(null);
-                    }
-                    saving.set(false);
-                });
+        Runnable saveTask = () -> {
+            try {
+                storage.save(finalMap);
+                if (!removeKeys.isEmpty()) {
+                    storage.remove(removeKeys);
+                }
+                savingMap.set(null);
+            } catch (Throwable t) {
+                logger.log(Level.SEVERE, "Failed to save entries for " + holder.getName(), t);
+            }
+            saving.set(false);
+        };
+
+        if (urgent) {
+            saveTask.run();
+        } else {
+            CompletableFuture.runAsync(saveTask);
+        }
     }
 
     @Override

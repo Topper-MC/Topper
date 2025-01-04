@@ -12,8 +12,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 public class FlatStorageSupplier implements DataStorageSupplier {
     private final Logger logger = LoggerProvider.getLogger(getClass());
@@ -69,41 +67,20 @@ public class FlatStorageSupplier implements DataStorageSupplier {
             }
 
             @Override
-            public CompletableFuture<Void> save(Map<K, V> map, boolean urgent) {
-                Runnable runnable = () -> {
-                    map.forEach((k, v) -> properties.put(converter.toRawKey(k), converter.toRawValue(v)));
-                    saveRunnable.run();
-                };
-                if (urgent) {
-                    runnable.run();
-                    return CompletableFuture.completedFuture(null);
-                } else {
-                    return CompletableFuture.runAsync(runnable);
-                }
+            public void save(Map<K, V> map) {
+                map.forEach((k, v) -> properties.put(converter.toRawKey(k), converter.toRawValue(v)));
+                saveRunnable.run();
             }
 
             @Override
-            public CompletableFuture<Optional<V>> load(K key, boolean urgent) {
-                Supplier<Optional<V>> runnable = () -> Optional.ofNullable(properties.getProperty(converter.toRawKey(key))).map(converter::toValue);
-                if (urgent) {
-                    return CompletableFuture.completedFuture(runnable.get());
-                } else {
-                    return CompletableFuture.supplyAsync(runnable);
-                }
+            public Optional<V> load(K key) {
+                return Optional.ofNullable(properties.getProperty(converter.toRawKey(key))).map(converter::toValue);
             }
 
             @Override
-            public CompletableFuture<Void> remove(Collection<K> keys, boolean urgent) {
-                Runnable runnable = () -> {
-                    keys.forEach(key -> properties.remove(converter.toRawKey(key)));
-                    saveRunnable.run();
-                };
-                if (urgent) {
-                    runnable.run();
-                    return CompletableFuture.completedFuture(null);
-                } else {
-                    return CompletableFuture.runAsync(runnable);
-                }
+            public void remove(Collection<K> keys) {
+                keys.forEach(key -> properties.remove(converter.toRawKey(key)));
+                saveRunnable.run();
             }
 
             @Override

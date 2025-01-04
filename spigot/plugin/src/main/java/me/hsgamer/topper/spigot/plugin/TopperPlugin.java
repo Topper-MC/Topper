@@ -49,7 +49,7 @@ public class TopperPlugin extends BasePlugin {
     @Override
     public void load() {
         MessageUtils.setPrefix(get(MessageConfig.class)::getPrefix);
-        SpigotDataStorageBuilder.register(this, get(DataStorageBuilder.class));
+        SpigotDataStorageBuilder.register(get(DataStorageBuilder.class));
     }
 
     @Override

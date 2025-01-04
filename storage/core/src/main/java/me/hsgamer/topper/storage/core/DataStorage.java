@@ -3,16 +3,15 @@ package me.hsgamer.topper.storage.core;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 public interface DataStorage<K, V> {
     Map<K, V> load();
 
-    CompletableFuture<Void> save(Map<K, V> map, boolean urgent);
+    void save(Map<K, V> map);
 
-    CompletableFuture<Optional<V>> load(K key, boolean urgent);
+    Optional<V> load(K key);
 
-    CompletableFuture<Void> remove(Collection<K> keys, boolean urgent);
+    void remove(Collection<K> keys);
 
     default void onRegister() {
         // EMPTY

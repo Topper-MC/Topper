@@ -11,24 +11,19 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 public class ConfigStorageSupplier implements DataStorageSupplier {
-    private final Executor mainThreadExecutor;
     private final UnaryOperator<String> configNameProvider;
     private final Function<File, Config> configProvider;
     private final File holderBaseFolder;
 
     public ConfigStorageSupplier(
-            Executor mainThreadExecutor,
             UnaryOperator<String> configNameProvider,
             Function<File, Config> configProvider,
             File holderBaseFolder
     ) {
-        this.mainThreadExecutor = mainThreadExecutor;
         this.configNameProvider = configNameProvider;
         this.configProvider = configProvider;
         this.holderBaseFolder = holderBaseFolder;
@@ -56,35 +51,20 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
             }
 
             @Override
-            public CompletableFuture<Void> save(Map<K, V> map, boolean urgent) {
-                return CompletableFuture.supplyAsync(
-                        () -> {
-                            map.forEach((key, value) -> config.set(converter.toRawValue(value), converter.toRawKey(key)));
-                            config.save();
-                            return null;
-                        },
-                        urgent ? Runnable::run : mainThreadExecutor
-                );
+            public void save(Map<K, V> map) {
+                map.forEach((key, value) -> config.set(converter.toRawValue(value), converter.toRawKey(key)));
+                config.save();
             }
 
             @Override
-            public CompletableFuture<Optional<V>> load(K key, boolean urgent) {
-                return CompletableFuture.supplyAsync(
-                        () -> Optional.ofNullable(config.get(converter.toRawKey(key))).map(String::valueOf).map(converter::toValue),
-                        urgent ? Runnable::run : mainThreadExecutor
-                );
+            public Optional<V> load(K key) {
+                return Optional.ofNullable(config.get(converter.toRawKey(key))).map(String::valueOf).map(converter::toValue);
             }
 
             @Override
-            public CompletableFuture<Void> remove(Collection<K> keys, boolean urgent) {
-                return CompletableFuture.supplyAsync(
-                        () -> {
-                            keys.forEach(key -> config.remove(converter.toRawKey(key)));
-                            config.save();
-                            return null;
-                        },
-                        urgent ? Runnable::run : mainThreadExecutor
-                );
+            public void remove(Collection<K> keys) {
+                keys.forEach(key -> config.remove(converter.toRawKey(key)));
+                config.save();
             }
 
             @Override

@@ -7,7 +7,7 @@ import me.hsgamer.hscore.logger.common.LogLevel;
 
 import java.io.File;
 import java.sql.Connection;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -45,34 +45,68 @@ public class SqliteStorageSupplier extends SqlStorageSupplier {
 
     @Override
     protected List<String> toSaveStatement(String name, String[] keyColumns, String[] valueColumns) {
-        StringBuilder statement = new StringBuilder("INSERT OR REPLACE INTO `")
+        StringBuilder insertStatement = new StringBuilder("INSERT OR IGNORE INTO `")
                 .append(name)
                 .append("` (");
         for (int i = 0; i < keyColumns.length + valueColumns.length; i++) {
-            statement.append("`")
+            insertStatement.append("`")
                     .append(i < keyColumns.length ? keyColumns[i] : valueColumns[i - keyColumns.length])
                     .append("`");
             if (i != keyColumns.length + valueColumns.length - 1) {
-                statement.append(", ");
+                insertStatement.append(", ");
             }
         }
-        statement.append(") VALUES (");
+        insertStatement.append(") VALUES (");
         for (int i = 0; i < keyColumns.length + valueColumns.length; i++) {
-            statement.append("?");
+            insertStatement.append("?");
             if (i != keyColumns.length + valueColumns.length - 1) {
-                statement.append(", ");
+                insertStatement.append(", ");
             }
         }
-        statement.append(");");
-        return Collections.singletonList(statement.toString());
+        insertStatement.append(");");
+
+        StringBuilder updateStatement = new StringBuilder("UPDATE `")
+                .append(name)
+                .append("` SET ");
+        for (int i = 0; i < valueColumns.length; i++) {
+            updateStatement.append("`")
+                    .append(valueColumns[i])
+                    .append("` = ?");
+            if (i != valueColumns.length - 1) {
+                updateStatement.append(", ");
+            }
+        }
+        updateStatement.append(" WHERE ");
+        for (int i = 0; i < keyColumns.length; i++) {
+            updateStatement.append("`")
+                    .append(keyColumns[i])
+                    .append("` = ?");
+            if (i != keyColumns.length - 1) {
+                updateStatement.append(" AND ");
+            }
+        }
+        updateStatement.append(";");
+
+        return Arrays.asList(
+                insertStatement.toString(),
+                updateStatement.toString()
+        );
     }
 
     @Override
     protected List<Object[]> toSaveValues(Object[] keys, Object[] values) {
-        Object[] queryValues = new Object[keys.length + values.length];
-        System.arraycopy(keys, 0, queryValues, 0, keys.length);
-        System.arraycopy(values, 0, queryValues, keys.length, values.length);
-        return Collections.singletonList(queryValues);
+        Object[] insertValues = new Object[keys.length + values.length];
+        System.arraycopy(keys, 0, insertValues, 0, keys.length);
+        System.arraycopy(values, 0, insertValues, keys.length, values.length);
+
+        Object[] updateValues = new Object[values.length + keys.length];
+        System.arraycopy(values, 0, updateValues, 0, values.length);
+        System.arraycopy(keys, 0, updateValues, values.length, keys.length);
+
+        return Arrays.asList(
+                insertValues,
+                updateValues
+        );
     }
 
     @Override

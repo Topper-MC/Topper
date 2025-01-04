@@ -56,4 +56,12 @@ public class NewSqliteStorageSupplier extends SqliteStorageSupplier {
         statement.append(";");
         return Collections.singletonList(statement.toString());
     }
+
+    @Override
+    protected List<Object[]> toSaveValues(Object[] keys, Object[] values) {
+        Object[] queryValues = new Object[keys.length + values.length];
+        System.arraycopy(keys, 0, queryValues, 0, keys.length);
+        System.arraycopy(values, 0, queryValues, keys.length, values.length);
+        return Collections.singletonList(queryValues);
+    }
 }

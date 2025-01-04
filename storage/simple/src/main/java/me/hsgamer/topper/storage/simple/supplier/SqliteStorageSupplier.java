@@ -7,6 +7,8 @@ import me.hsgamer.hscore.logger.common.LogLevel;
 
 import java.io.File;
 import java.sql.Connection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -42,7 +44,7 @@ public class SqliteStorageSupplier extends SqlStorageSupplier {
     }
 
     @Override
-    protected String toSaveStatement(String name, String[] keyColumns, String[] valueColumns) {
+    protected List<String> toSaveStatement(String name, String[] keyColumns, String[] valueColumns) {
         StringBuilder statement = new StringBuilder("INSERT OR REPLACE INTO `")
                 .append(name)
                 .append("` (");
@@ -62,15 +64,15 @@ public class SqliteStorageSupplier extends SqlStorageSupplier {
             }
         }
         statement.append(");");
-        return statement.toString();
+        return Collections.singletonList(statement.toString());
     }
 
     @Override
-    protected Object[] toSaveValues(Object[] keys, Object[] values) {
+    protected List<Object[]> toSaveValues(Object[] keys, Object[] values) {
         Object[] queryValues = new Object[keys.length + values.length];
         System.arraycopy(keys, 0, queryValues, 0, keys.length);
         System.arraycopy(values, 0, queryValues, keys.length, values.length);
-        return queryValues;
+        return Collections.singletonList(queryValues);
     }
 
     @Override

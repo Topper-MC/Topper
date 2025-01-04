@@ -3,6 +3,8 @@ package me.hsgamer.topper.storage.simple.supplier;
 import me.hsgamer.hscore.database.Setting;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class NewSqliteStorageSupplier extends SqliteStorageSupplier {
@@ -11,7 +13,7 @@ public class NewSqliteStorageSupplier extends SqliteStorageSupplier {
     }
 
     @Override
-    protected String toSaveStatement(String name, String[] keyColumns, String[] valueColumns) {
+    protected List<String> toSaveStatement(String name, String[] keyColumns, String[] valueColumns) {
         StringBuilder statement = new StringBuilder("INSERT INTO `")
                 .append(name)
                 .append("` (");
@@ -52,6 +54,6 @@ public class NewSqliteStorageSupplier extends SqliteStorageSupplier {
             }
         }
         statement.append(";");
-        return statement.toString();
+        return Collections.singletonList(statement.toString());
     }
 }

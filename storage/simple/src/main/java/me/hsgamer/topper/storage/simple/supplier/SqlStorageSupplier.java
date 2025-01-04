@@ -8,7 +8,6 @@ import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.storage.core.DataStorage;
 import me.hsgamer.topper.storage.simple.converter.SqlEntryConverter;
 import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
-import org.intellij.lang.annotations.Language;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -24,10 +23,9 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
 
     protected abstract void flushConnection(Connection connection);
 
-    @Language("SQL")
-    protected abstract String toSaveStatement(String name, String[] keyColumns, String[] valueColumns);
+    protected abstract List<String> toSaveStatement(String name, String[] keyColumns, String[] valueColumns);
 
-    protected abstract Object[] toSaveValues(Object[] keys, Object[] values);
+    protected abstract List<Object[]> toSaveValues(Object[] keys, Object[] values);
 
     @Override
     public <K, V> DataStorage<K, V> getStorage(String name, DataStorageSetting<K, V> setting) {
@@ -63,16 +61,22 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                         String[] keyColumns = converter.getKeyColumns();
                         String[] valueColumns = converter.getValueColumns();
 
-                        @Language("SQL") String statement = toSaveStatement(name, keyColumns, valueColumns);
+                        List<String> statement = toSaveStatement(name, keyColumns, valueColumns);
+                        List<List<Object[]>> values = new ArrayList<>();
 
-                        BatchBuilder batchBuilder = BatchBuilder.create(connection, statement);
                         map.forEach((key, value) -> {
-                            Object[] keyQueryValues = converter.toKeyQueryValues(key);
-                            Object[] valueQueryValues = converter.toValueQueryValues(value);
-                            Object[] queryValues = toSaveValues(keyQueryValues, valueQueryValues);
-                            batchBuilder.addValues(queryValues);
+                            Object[] keyValues = converter.toKeyQueryValues(key);
+                            Object[] valueValues = converter.toValueQueryValues(value);
+                            values.add(toSaveValues(keyValues, valueValues));
                         });
-                        batchBuilder.execute();
+
+                        for (int i = 0; i < statement.size(); i++) {
+                            BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.get(i));
+                            for (List<Object[]> value : values) {
+                                batchBuilder.addValues(value.get(i));
+                            }
+                            batchBuilder.execute();
+                        }
                     } catch (SQLException e) {
                         logger.log(LogLevel.ERROR, "Failed to save top holder", e);
                     } finally {

@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable {
     private final Logger logger;
@@ -53,15 +54,17 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
             return;
         }
 
-        Map<K, V> finalMap = new HashMap<>();
         Set<K> removeKeys = new HashSet<>();
-        for (Map.Entry<K, V> entry : map.entrySet()) {
-            if (entry.getValue() == null) {
-                removeKeys.add(entry.getKey());
-            } else {
-                finalMap.put(entry.getKey(), entry.getValue());
-            }
-        }
+        Map<K, V> finalMap = map.entrySet()
+                .stream()
+                .filter(entry -> {
+                    if (entry.getValue() == null) {
+                        removeKeys.add(entry.getKey());
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         Runnable saveTask = () -> {
             try {

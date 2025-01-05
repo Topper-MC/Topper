@@ -72,8 +72,9 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
                 savingMap.set(null);
             } catch (Throwable t) {
                 logger.log(Level.SEVERE, "Failed to save entries for " + holder.getName(), t);
+            } finally {
+                saving.set(false);
             }
-            saving.set(false);
         };
 
         if (urgent) {

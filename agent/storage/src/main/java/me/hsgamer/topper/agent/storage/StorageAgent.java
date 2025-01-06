@@ -7,7 +7,6 @@ import me.hsgamer.topper.core.DataHolder;
 import me.hsgamer.topper.storage.core.DataStorage;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -66,24 +65,16 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        Runnable saveTask = () -> {
-            try {
-                storage.save(finalMap);
-                if (!removeKeys.isEmpty()) {
-                    storage.remove(removeKeys);
-                }
-                savingMap.set(null);
-            } catch (Throwable t) {
-                logger.log(Level.SEVERE, "Failed to save entries for " + holder.getName(), t);
-            } finally {
-                saving.set(false);
+        try {
+            storage.save(finalMap);
+            if (!removeKeys.isEmpty()) {
+                storage.remove(removeKeys);
             }
-        };
-
-        if (urgent) {
-            saveTask.run();
-        } else {
-            CompletableFuture.runAsync(saveTask);
+            savingMap.set(null);
+        } catch (Throwable t) {
+            logger.log(Level.SEVERE, "Failed to save entries for " + holder.getName(), t);
+        } finally {
+            saving.set(false);
         }
     }
 

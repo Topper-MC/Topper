@@ -67,20 +67,41 @@ public class FlatStorageSupplier implements DataStorageSupplier {
             }
 
             @Override
-            public void save(Map<K, V> map) {
-                map.forEach((k, v) -> properties.put(converter.toRawKey(k), converter.toRawValue(v)));
-                saveRunnable.run();
-            }
-
-            @Override
             public Optional<V> load(K key) {
                 return Optional.ofNullable(properties.getProperty(converter.toRawKey(key))).map(converter::toValue);
             }
 
             @Override
-            public void remove(Collection<K> keys) {
-                keys.forEach(key -> properties.remove(converter.toRawKey(key)));
-                saveRunnable.run();
+            public Optional<Modifier<K, V>> modify() {
+                return Optional.of(new Modifier<K, V>() {
+                    private final Map<K, V> map = new HashMap<>();
+                    private final Set<K> removeSet = new HashSet<>();
+
+                    @Override
+                    public void save(Map<K, V> map) {
+                        this.map.putAll(map);
+                        this.removeSet.removeIf(this.map::containsKey);
+                    }
+
+                    @Override
+                    public void remove(Collection<K> keys) {
+                        this.removeSet.addAll(keys);
+                        this.removeSet.forEach(map::remove);
+                    }
+
+                    @Override
+                    public void commit() {
+                        map.forEach((k, v) -> properties.put(converter.toRawKey(k), converter.toRawValue(v)));
+                        removeSet.forEach(key -> properties.remove(converter.toRawKey(key)));
+                        saveRunnable.run();
+                    }
+
+                    @Override
+                    public void rollback() {
+                        map.clear();
+                        removeSet.clear();
+                    }
+                });
             }
 
             @Override

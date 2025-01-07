@@ -27,7 +27,9 @@ public class SqliteStorageSupplier extends SqlStorageSupplier {
         return connectionReference.updateAndGet(connection -> {
             try {
                 if (connection == null || connection.isClosed()) {
-                    return client.getConnection();
+                    Connection clientConnection = client.getConnection();
+                    clientConnection.setAutoCommit(false);
+                    return clientConnection;
                 } else {
                     return connection;
                 }

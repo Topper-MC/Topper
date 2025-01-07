@@ -51,39 +51,6 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             }
 
             @Override
-            public void save(Map<K, V> map) {
-                Connection connection = null;
-                try {
-                    connection = getConnection();
-                    String[] keyColumns = converter.getKeyColumns();
-                    String[] valueColumns = converter.getValueColumns();
-
-                    List<String> statement = toSaveStatement(name, keyColumns, valueColumns);
-                    List<List<Object[]>> values = new ArrayList<>();
-
-                    map.forEach((key, value) -> {
-                        Object[] keyValues = converter.toKeyQueryValues(key);
-                        Object[] valueValues = converter.toValueQueryValues(value);
-                        values.add(toSaveValues(keyValues, valueValues));
-                    });
-
-                    for (int i = 0; i < statement.size(); i++) {
-                        BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.get(i));
-                        for (List<Object[]> value : values) {
-                            batchBuilder.addValues(value.get(i));
-                        }
-                        batchBuilder.execute();
-                    }
-                } catch (SQLException e) {
-                    logger.log(LogLevel.ERROR, "Failed to save top holder", e);
-                } finally {
-                    if (connection != null) {
-                        flushConnection(connection);
-                    }
-                }
-            }
-
-            @Override
             public Optional<V> load(K key) {
                 Connection connection = null;
                 try {
@@ -120,36 +87,83 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             }
 
             @Override
-            public void remove(Collection<K> keys) {
-                Connection connection = null;
+            public Optional<Modifier<K, V>> modify() {
                 try {
-                    connection = getConnection();
-                    String[] keyColumns = converter.getKeyColumns();
+                    Connection connection = getConnection();
+                    Modifier<K, V> modifier = new Modifier<K, V>() {
+                        @Override
+                        public void save(Map<K, V> map) throws SQLException {
+                            String[] keyColumns = converter.getKeyColumns();
+                            String[] valueColumns = converter.getValueColumns();
 
-                    StringBuilder statement = new StringBuilder("DELETE FROM `")
-                            .append(name)
-                            .append("` WHERE ");
-                    for (int i = 0; i < keyColumns.length; i++) {
-                        statement.append("`")
-                                .append(keyColumns[i])
-                                .append("` = ?");
-                        if (i != keyColumns.length - 1) {
-                            statement.append(" AND ");
+                            List<String> statement = toSaveStatement(name, keyColumns, valueColumns);
+                            List<List<Object[]>> values = new ArrayList<>();
+
+                            map.forEach((key, value) -> {
+                                Object[] keyValues = converter.toKeyQueryValues(key);
+                                Object[] valueValues = converter.toValueQueryValues(value);
+                                values.add(toSaveValues(keyValues, valueValues));
+                            });
+
+                            for (int i = 0; i < statement.size(); i++) {
+                                BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.get(i));
+                                for (List<Object[]> value : values) {
+                                    batchBuilder.addValues(value.get(i));
+                                }
+                                batchBuilder.execute();
+                            }
                         }
-                    }
 
-                    BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.toString());
-                    keys.forEach(key -> {
-                        Object[] keyValues = converter.toKeyQueryValues(key);
-                        batchBuilder.addValues(keyValues);
-                    });
-                    batchBuilder.execute();
+                        @Override
+                        public void remove(Collection<K> keys) throws SQLException {
+                            String[] keyColumns = converter.getKeyColumns();
+
+                            StringBuilder statement = new StringBuilder("DELETE FROM `")
+                                    .append(name)
+                                    .append("` WHERE ");
+                            for (int i = 0; i < keyColumns.length; i++) {
+                                statement.append("`")
+                                        .append(keyColumns[i])
+                                        .append("` = ?");
+                                if (i != keyColumns.length - 1) {
+                                    statement.append(" AND ");
+                                }
+                            }
+
+                            BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.toString());
+                            keys.forEach(key -> {
+                                Object[] keyValues = converter.toKeyQueryValues(key);
+                                batchBuilder.addValues(keyValues);
+                            });
+                            batchBuilder.execute();
+                        }
+
+                        @Override
+                        public void commit() {
+                            try {
+                                connection.commit();
+                            } catch (SQLException e) {
+                                logger.log(LogLevel.ERROR, "Failed to commit", e);
+                            } finally {
+                                flushConnection(connection);
+                            }
+                        }
+
+                        @Override
+                        public void rollback() {
+                            try {
+                                connection.rollback();
+                            } catch (SQLException e) {
+                                logger.log(LogLevel.ERROR, "Failed to rollback", e);
+                            } finally {
+                                flushConnection(connection);
+                            }
+                        }
+                    };
+                    return Optional.of(modifier);
                 } catch (SQLException e) {
-                    logger.log(LogLevel.ERROR, "Failed to remove top holder", e);
-                } finally {
-                    if (connection != null) {
-                        flushConnection(connection);
-                    }
+                    logger.log(LogLevel.ERROR, "Failed to get connection", e);
+                    return Optional.empty();
                 }
             }
 

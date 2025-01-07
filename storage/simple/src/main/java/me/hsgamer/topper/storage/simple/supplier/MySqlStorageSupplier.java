@@ -22,7 +22,9 @@ public class MySqlStorageSupplier extends SqlStorageSupplier {
 
     @Override
     protected Connection getConnection() throws SQLException {
-        return client.getConnection();
+        Connection connection = client.getConnection();
+        connection.setAutoCommit(false);
+        return connection;
     }
 
     @Override

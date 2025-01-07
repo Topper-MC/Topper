@@ -7,10 +7,7 @@ import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
 import me.hsgamer.topper.storage.simple.supplier.DataStorageSupplier;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -51,20 +48,41 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
             }
 
             @Override
-            public void save(Map<K, V> map) {
-                map.forEach((key, value) -> config.set(converter.toRawValue(value), converter.toRawKey(key)));
-                config.save();
-            }
-
-            @Override
             public Optional<V> load(K key) {
                 return Optional.ofNullable(config.get(converter.toRawKey(key))).map(String::valueOf).map(converter::toValue);
             }
 
             @Override
-            public void remove(Collection<K> keys) {
-                keys.forEach(key -> config.remove(converter.toRawKey(key)));
-                config.save();
+            public Optional<Modifier<K, V>> modify() {
+                return Optional.of(new Modifier<K, V>() {
+                    private final Map<K, V> map = new HashMap<>();
+                    private final Set<K> removeSet = new HashSet<>();
+
+                    @Override
+                    public void save(Map<K, V> map) {
+                        this.map.putAll(map);
+                        this.removeSet.removeIf(this.map::containsKey);
+                    }
+
+                    @Override
+                    public void remove(Collection<K> keys) {
+                        this.removeSet.addAll(keys);
+                        this.removeSet.forEach(map::remove);
+                    }
+
+                    @Override
+                    public void commit() {
+                        map.forEach((k, v) -> config.set(converter.toRawKey(k), converter.toRawValue(v)));
+                        removeSet.forEach(key -> config.remove(converter.toRawKey(key)));
+                        config.save();
+                    }
+
+                    @Override
+                    public void rollback() {
+                        map.clear();
+                        removeSet.clear();
+                    }
+                });
             }
 
             @Override

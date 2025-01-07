@@ -65,14 +65,24 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+
+        Optional<DataStorage.Modifier<K, V>> optionalModifier = storage.modify();
+        if (!optionalModifier.isPresent()) {
+            saving.set(false);
+            return;
+        }
+
+        DataStorage.Modifier<K, V> modifier = optionalModifier.get();
         try {
-            storage.save(finalMap);
+            modifier.save(finalMap);
             if (!removeKeys.isEmpty()) {
-                storage.remove(removeKeys);
+                modifier.remove(removeKeys);
             }
+            modifier.commit();
             savingMap.set(null);
         } catch (Throwable t) {
             logger.log(Level.SEVERE, "Failed to save entries for " + holder.getName(), t);
+            modifier.rollback();
         } finally {
             saving.set(false);
         }

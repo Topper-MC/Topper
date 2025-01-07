@@ -7,11 +7,9 @@ import java.util.Optional;
 public interface DataStorage<K, V> {
     Map<K, V> load();
 
-    void save(Map<K, V> map);
-
     Optional<V> load(K key);
 
-    void remove(Collection<K> keys);
+    Optional<Modifier<K, V>> modify();
 
     default void onRegister() {
         // EMPTY
@@ -19,5 +17,15 @@ public interface DataStorage<K, V> {
 
     default void onUnregister() {
         // EMPTY
+    }
+
+    interface Modifier<K, V> {
+        void save(Map<K, V> map) throws Exception;
+
+        void remove(Collection<K> keys) throws Exception;
+
+        void commit();
+
+        void rollback();
     }
 }

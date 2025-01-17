@@ -43,7 +43,7 @@ public class FlatStorageSupplier implements DataStorageSupplier {
         Runnable saveRunnable = () -> {
             try {
                 try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-                    properties.store(fileOutputStream, "Data for " + name);
+                    properties.store(fileOutputStream, null);
                 }
             } catch (IOException e) {
                 logger.log(LogLevel.ERROR, "Failed to save the data", e);

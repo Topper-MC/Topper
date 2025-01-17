@@ -34,7 +34,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     connection = getConnection();
                     return StatementBuilder.create(connection)
                             .setStatement("SELECT * FROM `" + name + "`;")
-                            .queryList(resultSet -> new AbstractMap.SimpleEntry<>(keyConverter.parseSqlResultSet(resultSet), valueConverter.parseSqlResultSet(resultSet)))
+                            .queryList(resultSet -> new AbstractMap.SimpleEntry<>(keyConverter.fromSqlResultSet(resultSet), valueConverter.fromSqlResultSet(resultSet)))
                             .stream()
                             .filter(entry -> entry.getKey() != null && entry.getValue() != null)
                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -71,7 +71,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                             .setStatement(statement.toString())
                             .addValues(keyValues)
                             .query(resultSet -> resultSet.next()
-                                    ? Optional.ofNullable(valueConverter.parseSqlResultSet(resultSet))
+                                    ? Optional.ofNullable(valueConverter.fromSqlResultSet(resultSet))
                                     : Optional.empty()
                             );
                 } catch (SQLException e) {

@@ -8,13 +8,13 @@ import java.sql.SQLException;
 import java.util.Map;
 
 public interface ValueConverter<T> {
-    @NotNull String parseString(@NotNull T value);
+    @NotNull String toRawString(@NotNull T value);
 
-    @Nullable T parseString(@NotNull String value);
+    @Nullable T fromRawString(@NotNull String value);
 
-    @NotNull Map<String, Object> parseObjectMap(@NotNull T value);
+    @NotNull Map<String, Object> toObjectMap(@NotNull T value);
 
-    @Nullable T parseObjectMap(@NotNull Map<String, Object> map);
+    @Nullable T fromObjectMap(@NotNull Map<String, Object> map);
 
     String[] getSqlColumns();
 
@@ -22,5 +22,5 @@ public interface ValueConverter<T> {
 
     Object[] toSqlValues(@NotNull T value);
 
-    @Nullable T parseSqlResultSet(@NotNull ResultSet resultSet) throws SQLException;
+    @Nullable T fromSqlResultSet(@NotNull ResultSet resultSet) throws SQLException;
 }

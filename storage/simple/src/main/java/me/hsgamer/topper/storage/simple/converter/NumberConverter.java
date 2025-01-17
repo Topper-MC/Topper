@@ -21,12 +21,12 @@ public class NumberConverter<T extends Number> implements ValueConverter<T> {
     }
 
     @Override
-    public @NotNull String parseString(@NotNull Number value) {
+    public @NotNull String toRawString(@NotNull Number value) {
         return value.toString();
     }
 
     @Override
-    public @Nullable T parseString(@NotNull String value) {
+    public @Nullable T fromRawString(@NotNull String value) {
         try {
             return numberFunction.apply(isDoubleValue ? Double.parseDouble(value) : Long.parseLong(value));
         } catch (NumberFormatException e) {
@@ -35,12 +35,12 @@ public class NumberConverter<T extends Number> implements ValueConverter<T> {
     }
 
     @Override
-    public @NotNull Map<String, Object> parseObjectMap(@NotNull Number value) {
+    public @NotNull Map<String, Object> toObjectMap(@NotNull Number value) {
         return Collections.singletonMap(valueName, value);
     }
 
     @Override
-    public @Nullable T parseObjectMap(@NotNull Map<String, Object> map) {
+    public @Nullable T fromObjectMap(@NotNull Map<String, Object> map) {
         Object value = map.get(valueName);
         Number number;
         if (value instanceof Number) {
@@ -72,7 +72,7 @@ public class NumberConverter<T extends Number> implements ValueConverter<T> {
     }
 
     @Override
-    public @Nullable T parseSqlResultSet(@NotNull ResultSet resultSet) throws SQLException {
+    public @Nullable T fromSqlResultSet(@NotNull ResultSet resultSet) throws SQLException {
         Number number = isDoubleValue ? resultSet.getDouble(valueName) : resultSet.getLong(valueName);
         return numberFunction.apply(number);
     }

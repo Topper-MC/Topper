@@ -55,8 +55,8 @@ public class FlatStorageSupplier implements DataStorageSupplier {
             public Map<K, V> load() {
                 Map<K, V> map = new HashMap<>();
                 properties.forEach((key, value) -> {
-                    K k = keyConverter.parseString(key.toString());
-                    V v = valueConverter.parseString(value.toString());
+                    K k = keyConverter.fromRawString(key.toString());
+                    V v = valueConverter.fromRawString(value.toString());
                     if (k != null && v != null) {
                         map.put(k, v);
                     }
@@ -66,7 +66,7 @@ public class FlatStorageSupplier implements DataStorageSupplier {
 
             @Override
             public Optional<V> load(K key) {
-                return Optional.ofNullable(properties.getProperty(keyConverter.parseString(key))).map(valueConverter::parseString);
+                return Optional.ofNullable(properties.getProperty(keyConverter.toRawString(key))).map(valueConverter::fromRawString);
             }
 
             @Override
@@ -89,8 +89,8 @@ public class FlatStorageSupplier implements DataStorageSupplier {
 
                     @Override
                     public void commit() {
-                        map.forEach((k, v) -> properties.put(keyConverter.parseString(k), valueConverter.parseString(v)));
-                        removeSet.forEach(key -> properties.remove(keyConverter.parseString(key)));
+                        map.forEach((k, v) -> properties.put(keyConverter.toRawString(k), valueConverter.toRawString(v)));
+                        removeSet.forEach(key -> properties.remove(keyConverter.toRawString(key)));
                         saveRunnable.run();
                     }
 

@@ -25,24 +25,24 @@ public class SimpleValueConverter<T> implements ValueConverter<T> {
     }
 
     @Override
-    public @NotNull String parseString(@NotNull T value) {
+    public @NotNull String toRawString(@NotNull T value) {
         return toStringConverter.apply(value);
     }
 
     @Override
-    public @Nullable T parseString(@NotNull String value) {
+    public @Nullable T fromRawString(@NotNull String value) {
         return fromStringConverter.apply(value);
     }
 
     @Override
-    public @NotNull Map<String, Object> parseObjectMap(@NotNull T value) {
+    public @NotNull Map<String, Object> toObjectMap(@NotNull T value) {
         return Collections.singletonMap(valueName, value);
     }
 
     @Override
-    public @Nullable T parseObjectMap(@NotNull Map<String, Object> map) {
+    public @Nullable T fromObjectMap(@NotNull Map<String, Object> map) {
         Object value = map.get(valueName);
-        return value == null ? null : parseString(value.toString());
+        return value == null ? null : fromRawString(value.toString());
     }
 
     @Override
@@ -57,12 +57,12 @@ public class SimpleValueConverter<T> implements ValueConverter<T> {
 
     @Override
     public Object[] toSqlValues(@NotNull T value) {
-        return new Object[]{parseString(value)};
+        return new Object[]{toRawString(value)};
     }
 
     @Override
-    public @Nullable T parseSqlResultSet(@NotNull ResultSet resultSet) throws SQLException {
+    public @Nullable T fromSqlResultSet(@NotNull ResultSet resultSet) throws SQLException {
         String value = resultSet.getString(valueName);
-        return value == null ? null : parseString(value);
+        return value == null ? null : fromRawString(value);
     }
 }

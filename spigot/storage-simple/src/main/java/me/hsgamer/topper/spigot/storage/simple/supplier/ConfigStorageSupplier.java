@@ -35,8 +35,8 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
                 Map<String[], Object> values = config.getValues(false);
                 Map<K, V> map = new HashMap<>();
                 values.forEach((path, value) -> {
-                    K finalKey = keyConverter.parseString(path[0]);
-                    V finalValue = valueConverter.parseString(String.valueOf(value));
+                    K finalKey = keyConverter.fromRawString(path[0]);
+                    V finalValue = valueConverter.fromRawString(String.valueOf(value));
                     if (finalKey != null && finalValue != null) {
                         map.put(finalKey, finalValue);
                     }
@@ -46,7 +46,7 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
 
             @Override
             public Optional<V> load(K key) {
-                return Optional.ofNullable(config.get(keyConverter.parseString(key))).map(String::valueOf).map(valueConverter::parseString);
+                return Optional.ofNullable(config.get(keyConverter.toRawString(key))).map(String::valueOf).map(valueConverter::fromRawString);
             }
 
             @Override
@@ -69,8 +69,8 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
 
                     @Override
                     public void commit() {
-                        map.forEach((k, v) -> config.set(keyConverter.parseString(k), valueConverter.parseString(v)));
-                        removeSet.forEach(key -> config.remove(keyConverter.parseString(key)));
+                        map.forEach((k, v) -> config.set(keyConverter.toRawString(k), valueConverter.toRawString(v)));
+                        removeSet.forEach(key -> config.remove(keyConverter.toRawString(key)));
                         config.save();
                     }
 

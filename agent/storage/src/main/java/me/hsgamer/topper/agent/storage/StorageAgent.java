@@ -7,6 +7,7 @@ import me.hsgamer.topper.core.DataHolder;
 import me.hsgamer.topper.storage.core.DataStorage;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -19,6 +20,7 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
     private final DataHolder<K, V> holder;
     private final DataStorage<K, V> storage;
     private final Queue<Map.Entry<K, V>> queue = new ConcurrentLinkedQueue<>(); // Value can be null representing removal
+    private final AtomicReference<Map<K, V>> storeMap = new AtomicReference<>(new ConcurrentHashMap<>());
     private final AtomicReference<Map<K, V>> savingMap = new AtomicReference<>();
     private final AtomicBoolean saving = new AtomicBoolean(false);
     private int maxEntryPerCall = 10;
@@ -33,11 +35,10 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
         if (saving.get() && !urgent) return;
         saving.set(true);
 
-        Map<K, V> map = savingMap.get();
-        if (map == null) {
-            map = new HashMap<>();
-        }
-        savingMap.set(map);
+        storeMap.getAndSet(new ConcurrentHashMap<>())
+                .forEach((key, value) -> queue.add(new AbstractMap.SimpleEntry<>(key, value)));
+
+        Map<K, V> map = savingMap.updateAndGet(old -> old == null ? new HashMap<>() : old);
 
         for (int i = 0; i < (urgent || maxEntryPerCall <= 0 ? Integer.MAX_VALUE : maxEntryPerCall); i++) {
             Map.Entry<K, V> entry = queue.poll();
@@ -110,12 +111,12 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
 
     @Override
     public void onUpdate(DataEntry<K, V> entry, V oldValue) {
-        queue.add(new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue()));
+        storeMap.get().put(entry.getKey(), entry.getValue());
     }
 
     @Override
     public void onRemove(DataEntry<K, V> entry) {
-        queue.add(new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), null));
+        storeMap.get().put(entry.getKey(), null);
     }
 
     @Override

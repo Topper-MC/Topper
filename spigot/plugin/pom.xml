@@ -128,11 +128,6 @@
             <artifactId>topper-spigot-storage-simple</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>me.hsgamer</groupId>
-            <artifactId>topper-storage-number</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.bstats</groupId>

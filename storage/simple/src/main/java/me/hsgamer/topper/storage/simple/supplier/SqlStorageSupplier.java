@@ -6,8 +6,7 @@ import me.hsgamer.hscore.logger.common.LogLevel;
 import me.hsgamer.hscore.logger.common.Logger;
 import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.storage.core.DataStorage;
-import me.hsgamer.topper.storage.simple.converter.SqlEntryConverter;
-import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
+import me.hsgamer.topper.storage.simple.converter.ValueConverter;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -26,9 +25,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
     protected abstract List<Object[]> toSaveValues(Object[] keys, Object[] values);
 
     @Override
-    public <K, V> DataStorage<K, V> getStorage(String name, DataStorageSetting<K, V> setting) {
-        SqlEntryConverter<K, V> converter = setting.getSqlEntryConverter();
-
+    public <K, V> DataStorage<K, V> getStorage(String name, ValueConverter<K> keyConverter, ValueConverter<V> valueConverter) {
         return new DataStorage<K, V>() {
             @Override
             public Map<K, V> load() {
@@ -37,8 +34,9 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     connection = getConnection();
                     return StatementBuilder.create(connection)
                             .setStatement("SELECT * FROM `" + name + "`;")
-                            .queryList(resultSet -> new AbstractMap.SimpleEntry<>(converter.getKey(resultSet), converter.getValue(resultSet)))
+                            .queryList(resultSet -> new AbstractMap.SimpleEntry<>(keyConverter.parseSqlResultSet(resultSet), valueConverter.parseSqlResultSet(resultSet)))
                             .stream()
+                            .filter(entry -> entry.getKey() != null && entry.getValue() != null)
                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                 } catch (SQLException e) {
                     logger.log(LogLevel.ERROR, "Failed to load top holder", e);
@@ -55,8 +53,8 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                 Connection connection = null;
                 try {
                     connection = getConnection();
-                    String[] keyColumns = converter.getKeyColumns();
-                    Object[] keyValues = converter.toKeyQueryValues(key);
+                    String[] keyColumns = keyConverter.getSqlColumns();
+                    Object[] keyValues = keyConverter.toSqlValues(key);
 
                     StringBuilder statement = new StringBuilder("SELECT * FROM `")
                             .append(name)
@@ -73,7 +71,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                             .setStatement(statement.toString())
                             .addValues(keyValues)
                             .query(resultSet -> resultSet.next()
-                                    ? Optional.of(converter.getValue(resultSet))
+                                    ? Optional.ofNullable(valueConverter.parseSqlResultSet(resultSet))
                                     : Optional.empty()
                             );
                 } catch (SQLException e) {
@@ -93,15 +91,15 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     Modifier<K, V> modifier = new Modifier<K, V>() {
                         @Override
                         public void save(Map<K, V> map) throws SQLException {
-                            String[] keyColumns = converter.getKeyColumns();
-                            String[] valueColumns = converter.getValueColumns();
+                            String[] keyColumns = keyConverter.getSqlColumns();
+                            String[] valueColumns = valueConverter.getSqlColumns();
 
                             List<String> statement = toSaveStatement(name, keyColumns, valueColumns);
                             List<List<Object[]>> values = new ArrayList<>();
 
                             map.forEach((key, value) -> {
-                                Object[] keyValues = converter.toKeyQueryValues(key);
-                                Object[] valueValues = converter.toValueQueryValues(value);
+                                Object[] keyValues = keyConverter.toSqlValues(key);
+                                Object[] valueValues = valueConverter.toSqlValues(value);
                                 values.add(toSaveValues(keyValues, valueValues));
                             });
 
@@ -116,7 +114,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
 
                         @Override
                         public void remove(Collection<K> keys) throws SQLException {
-                            String[] keyColumns = converter.getKeyColumns();
+                            String[] keyColumns = keyConverter.getSqlColumns();
 
                             StringBuilder statement = new StringBuilder("DELETE FROM `")
                                     .append(name)
@@ -132,7 +130,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
 
                             BatchBuilder batchBuilder = BatchBuilder.create(connection, statement.toString());
                             keys.forEach(key -> {
-                                Object[] keyValues = converter.toKeyQueryValues(key);
+                                Object[] keyValues = keyConverter.toSqlValues(key);
                                 batchBuilder.addValues(keyValues);
                             });
                             batchBuilder.execute();
@@ -172,19 +170,21 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                 Connection connection = null;
                 try {
                     connection = getConnection();
-                    String[] keyColumns = converter.getKeyColumns();
-                    String[] keyColumnDefinitions = converter.getKeyColumnDefinitions();
-                    String[] valueColumnDefinitions = converter.getValueColumnDefinitions();
+                    String[] keyColumns = keyConverter.getSqlColumns();
+                    String[] keyColumnDefinitions = keyConverter.getSqlColumnDefinitions();
+                    String[] valueColumns = valueConverter.getSqlColumns();
+                    String[] valueColumnDefinitions = valueConverter.getSqlColumnDefinitions();
                     StringBuilder statement = new StringBuilder("CREATE TABLE IF NOT EXISTS `")
                             .append(name)
                             .append("` (");
-                    for (int i = 0; i < keyColumnDefinitions.length + valueColumnDefinitions.length; i++) {
-                        if (i < keyColumnDefinitions.length) {
-                            statement.append(keyColumnDefinitions[i]);
-                        } else {
-                            statement.append(valueColumnDefinitions[i - keyColumnDefinitions.length]);
-                        }
-                        if (i != keyColumnDefinitions.length + valueColumnDefinitions.length - 1) {
+                    for (int i = 0; i < keyColumns.length + valueColumns.length; i++) {
+                        boolean isKey = i < keyColumns.length;
+                        int index = isKey ? i : i - keyColumns.length;
+                        statement.append("`")
+                                .append(isKey ? keyColumns[index] : valueColumns[index])
+                                .append("` ")
+                                .append(isKey ? keyColumnDefinitions[index] : valueColumnDefinitions[index]);
+                        if (i != keyColumns.length + valueColumns.length - 1) {
                             statement.append(", ");
                         }
                     }

@@ -1,13 +1,13 @@
 package me.hsgamer.topper.storage.simple.builder;
 
 import me.hsgamer.hscore.builder.Builder;
-import me.hsgamer.topper.storage.simple.setting.DataStorageBuilderSetting;
+import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
 import me.hsgamer.topper.storage.simple.supplier.*;
 
 import java.util.function.Function;
 
-public class DataStorageBuilder extends Builder<DataStorageBuilderSetting, DataStorageSupplier> {
-    private final Function<DataStorageBuilderSetting, DataStorageSupplier> defaultSupplier;
+public class DataStorageBuilder extends Builder<DataStorageSetting, DataStorageSupplier> {
+    private final Function<DataStorageSetting, DataStorageSupplier> defaultSupplier;
 
     public DataStorageBuilder() {
         this.defaultSupplier = setting -> new FlatStorageSupplier(setting.getBaseFolder());
@@ -17,7 +17,7 @@ public class DataStorageBuilder extends Builder<DataStorageBuilderSetting, DataS
         register(setting -> new MySqlStorageSupplier(setting.getDatabaseSettingModifier()), "mysql", "mysql-connector-java", "mysql-connector");
     }
 
-    public DataStorageSupplier buildSupplier(String type, DataStorageBuilderSetting setting) {
+    public DataStorageSupplier buildSupplier(String type, DataStorageSetting setting) {
         return build(type, setting).orElseGet(() -> defaultSupplier.apply(setting));
     }
 }

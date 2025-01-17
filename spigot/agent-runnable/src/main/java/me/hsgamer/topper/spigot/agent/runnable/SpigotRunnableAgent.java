@@ -4,7 +4,7 @@ import io.github.projectunified.minelib.scheduler.common.scheduler.Scheduler;
 import io.github.projectunified.minelib.scheduler.common.task.Task;
 import me.hsgamer.topper.agent.runnable.RunnableAgent;
 
-public class SpigotRunnableAgent extends RunnableAgent{
+public class SpigotRunnableAgent extends RunnableAgent {
     private final Scheduler scheduler;
     private final long interval;
 

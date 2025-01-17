@@ -2,8 +2,7 @@ package me.hsgamer.topper.spigot.storage.simple.supplier;
 
 import me.hsgamer.hscore.config.Config;
 import me.hsgamer.topper.storage.core.DataStorage;
-import me.hsgamer.topper.storage.simple.converter.FlatEntryConverter;
-import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
+import me.hsgamer.topper.storage.simple.converter.ValueConverter;
 import me.hsgamer.topper.storage.simple.supplier.DataStorageSupplier;
 
 import java.io.File;
@@ -27,9 +26,7 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
     }
 
     @Override
-    public <K, V> DataStorage<K, V> getStorage(String name, DataStorageSetting<K, V> setting) {
-        FlatEntryConverter<K, V> converter = setting.getFlatEntryConverter();
-
+    public <K, V> DataStorage<K, V> getStorage(String name, ValueConverter<K> keyConverter, ValueConverter<V> valueConverter) {
         return new DataStorage<K, V>() {
             private final Config config = configProvider.apply(new File(holderBaseFolder, configNameProvider.apply(name)));
 
@@ -38,9 +35,9 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
                 Map<String[], Object> values = config.getValues(false);
                 Map<K, V> map = new HashMap<>();
                 values.forEach((path, value) -> {
-                    V finalValue = converter.toValue(String.valueOf(value));
-                    if (finalValue != null) {
-                        K finalKey = converter.toKey(path[0]);
+                    K finalKey = keyConverter.parseString(path[0]);
+                    V finalValue = valueConverter.parseString(String.valueOf(value));
+                    if (finalKey != null && finalValue != null) {
                         map.put(finalKey, finalValue);
                     }
                 });
@@ -49,7 +46,7 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
 
             @Override
             public Optional<V> load(K key) {
-                return Optional.ofNullable(config.get(converter.toRawKey(key))).map(String::valueOf).map(converter::toValue);
+                return Optional.ofNullable(config.get(keyConverter.parseString(key))).map(String::valueOf).map(valueConverter::parseString);
             }
 
             @Override
@@ -72,8 +69,8 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
 
                     @Override
                     public void commit() {
-                        map.forEach((k, v) -> config.set(converter.toRawKey(k), converter.toRawValue(v)));
-                        removeSet.forEach(key -> config.remove(converter.toRawKey(key)));
+                        map.forEach((k, v) -> config.set(keyConverter.parseString(k), valueConverter.parseString(v)));
+                        removeSet.forEach(key -> config.remove(keyConverter.parseString(key)));
                         config.save();
                     }
 

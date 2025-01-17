@@ -9,20 +9,13 @@ import me.hsgamer.topper.spigot.plugin.config.DatabaseConfig;
 import me.hsgamer.topper.spigot.plugin.config.MainConfig;
 import me.hsgamer.topper.spigot.plugin.holder.NumberTopHolder;
 import me.hsgamer.topper.storage.core.DataStorage;
-import me.hsgamer.topper.storage.number.FlatNumberEntryConverter;
-import me.hsgamer.topper.storage.number.MapNumberEntryConverter;
-import me.hsgamer.topper.storage.number.SqlNumberEntryConverter;
 import me.hsgamer.topper.storage.simple.builder.DataStorageBuilder;
-import me.hsgamer.topper.storage.simple.converter.FlatEntryConverter;
-import me.hsgamer.topper.storage.simple.converter.MapEntryConverter;
-import me.hsgamer.topper.storage.simple.converter.SqlEntryConverter;
-import me.hsgamer.topper.storage.simple.setting.DataStorageBuilderSetting;
+import me.hsgamer.topper.storage.simple.converter.NumberConverter;
+import me.hsgamer.topper.storage.simple.converter.UUIDConverter;
 import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
 import me.hsgamer.topper.storage.simple.supplier.DataStorageSupplier;
 
 import java.io.File;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -39,7 +32,7 @@ public class TopManager implements Loadable {
     public void enable() {
         storageSupplier = instance.get(DataStorageBuilder.class).buildSupplier(
                 instance.get(MainConfig.class).getStorageType(),
-                new DataStorageBuilderSetting() {
+                new DataStorageSetting() {
                     @Override
                     public Consumer<Setting> getDatabaseSettingModifier() {
                         return ConfigGenerator.newInstance(DatabaseConfig.class, new BukkitConfig(instance, "database.yml"));
@@ -71,71 +64,11 @@ public class TopManager implements Loadable {
     }
 
     public DataStorage<UUID, Double> buildStorage(String name) {
-        return storageSupplier.getStorage(name, new DataStorageSetting<UUID, Double>() {
-            @Override
-            public FlatEntryConverter<UUID, Double> getFlatEntryConverter() {
-                return new FlatNumberEntryConverter<UUID>() {
-                    @Override
-                    public UUID toKey(String key) {
-                        return UUID.fromString(key);
-                    }
-
-                    @Override
-                    public String toRawKey(UUID uuid) {
-                        return uuid.toString();
-                    }
-                };
-            }
-
-            @Override
-            public MapEntryConverter<UUID, Double> getMapEntryConverter() {
-                return new MapNumberEntryConverter<UUID>() {
-                    @Override
-                    public UUID toKey(Map<String, Object> map) {
-                        Object key = map.get("uuid");
-                        if (key != null) {
-                            try {
-                                return UUID.fromString(key.toString());
-                            } catch (IllegalArgumentException e) {
-                                return null;
-                            }
-                        } else {
-                            return null;
-                        }
-                    }
-
-                    @Override
-                    public Map<String, Object> toRawKey(UUID key) {
-                        return Collections.singletonMap("uuid", key.toString());
-                    }
-                };
-            }
-
-            @Override
-            public SqlEntryConverter<UUID, Double> getSqlEntryConverter() {
-                return new SqlNumberEntryConverter<UUID>() {
-                    @Override
-                    public String[] getKeyColumns() {
-                        return new String[]{"uuid"};
-                    }
-
-                    @Override
-                    public UUID getKey(ResultSet resultSet) throws SQLException {
-                        return UUID.fromString(resultSet.getString("uuid"));
-                    }
-
-                    @Override
-                    public String[] getKeyColumnDefinitions() {
-                        return new String[]{"`uuid` varchar(36) NOT NULL"};
-                    }
-
-                    @Override
-                    public Object[] toKeyQueryValues(UUID key) {
-                        return new Object[]{key.toString()};
-                    }
-                };
-            }
-        });
+        return storageSupplier.getStorage(
+                name,
+                new UUIDConverter("uuid"),
+                new NumberConverter<>("value", true, Number::doubleValue)
+        );
     }
 
     public Optional<NumberTopHolder> getTopHolder(String name) {

@@ -1,13 +1,12 @@
 package me.hsgamer.topper.storage.simple.setting;
 
-import me.hsgamer.topper.storage.simple.converter.FlatEntryConverter;
-import me.hsgamer.topper.storage.simple.converter.MapEntryConverter;
-import me.hsgamer.topper.storage.simple.converter.SqlEntryConverter;
+import me.hsgamer.hscore.database.Setting;
 
-public interface DataStorageSetting<K, V> {
-    FlatEntryConverter<K, V> getFlatEntryConverter();
+import java.io.File;
+import java.util.function.Consumer;
 
-    MapEntryConverter<K, V> getMapEntryConverter();
+public interface DataStorageSetting {
+    Consumer<Setting> getDatabaseSettingModifier();
 
-    SqlEntryConverter<K, V> getSqlEntryConverter();
+    File getBaseFolder();
 }

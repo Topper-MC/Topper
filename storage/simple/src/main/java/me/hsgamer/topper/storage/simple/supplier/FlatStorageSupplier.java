@@ -4,8 +4,7 @@ import me.hsgamer.hscore.logger.common.LogLevel;
 import me.hsgamer.hscore.logger.common.Logger;
 import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.storage.core.DataStorage;
-import me.hsgamer.topper.storage.simple.converter.FlatEntryConverter;
-import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
+import me.hsgamer.topper.storage.simple.converter.ValueConverter;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,8 +21,7 @@ public class FlatStorageSupplier implements DataStorageSupplier {
     }
 
     @Override
-    public <K, V> DataStorage<K, V> getStorage(String name, DataStorageSetting<K, V> setting) {
-        FlatEntryConverter<K, V> converter = setting.getFlatEntryConverter();
+    public <K, V> DataStorage<K, V> getStorage(String name, ValueConverter<K> keyConverter, ValueConverter<V> valueConverter) {
         Properties properties = new Properties();
         File file = new File(baseFolder, name + ".properties");
         Runnable loadRunnable = () -> {
@@ -57,8 +55,8 @@ public class FlatStorageSupplier implements DataStorageSupplier {
             public Map<K, V> load() {
                 Map<K, V> map = new HashMap<>();
                 properties.forEach((key, value) -> {
-                    K k = converter.toKey(key.toString());
-                    V v = converter.toValue(value.toString());
+                    K k = keyConverter.parseString(key.toString());
+                    V v = valueConverter.parseString(value.toString());
                     if (k != null && v != null) {
                         map.put(k, v);
                     }
@@ -68,7 +66,7 @@ public class FlatStorageSupplier implements DataStorageSupplier {
 
             @Override
             public Optional<V> load(K key) {
-                return Optional.ofNullable(properties.getProperty(converter.toRawKey(key))).map(converter::toValue);
+                return Optional.ofNullable(properties.getProperty(keyConverter.parseString(key))).map(valueConverter::parseString);
             }
 
             @Override
@@ -91,8 +89,8 @@ public class FlatStorageSupplier implements DataStorageSupplier {
 
                     @Override
                     public void commit() {
-                        map.forEach((k, v) -> properties.put(converter.toRawKey(k), converter.toRawValue(v)));
-                        removeSet.forEach(key -> properties.remove(converter.toRawKey(key)));
+                        map.forEach((k, v) -> properties.put(keyConverter.parseString(k), valueConverter.parseString(v)));
+                        removeSet.forEach(key -> properties.remove(keyConverter.parseString(key)));
                         saveRunnable.run();
                     }
 

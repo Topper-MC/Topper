@@ -12,14 +12,14 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public final class ComplexValueConverter<T> implements ValueConverter<T> {
-    private final String rawStringSeparator;
+    private final String stringSeparator;
     private final List<Entry<T>> entries;
     private final Supplier<T> constructor;
     private final String[] sqlColumns;
     private final String[] sqlColumnDefinitions;
 
-    private ComplexValueConverter(String rawStringSeparator, List<Entry<T>> entries, Supplier<T> constructor) {
-        this.rawStringSeparator = rawStringSeparator;
+    private ComplexValueConverter(String stringSeparator, List<Entry<T>> entries, Supplier<T> constructor) {
+        this.stringSeparator = stringSeparator;
         this.entries = Collections.unmodifiableList(entries);
         this.constructor = constructor;
 
@@ -41,7 +41,7 @@ public final class ComplexValueConverter<T> implements ValueConverter<T> {
 
     @Override
     public @NotNull String toRawString(@NotNull T value) {
-        StringJoiner joiner = new StringJoiner(rawStringSeparator);
+        StringJoiner joiner = new StringJoiner(stringSeparator);
         for (Entry<T> entry : entries) {
             String rawString = entry.converter.toRawString(entry.getter.apply(value));
             joiner.add(rawString);
@@ -51,7 +51,7 @@ public final class ComplexValueConverter<T> implements ValueConverter<T> {
 
     @Override
     public @Nullable T fromRawString(@NotNull String value) {
-        String[] values = value.split(Pattern.quote(rawStringSeparator));
+        String[] values = value.split(Pattern.quote(stringSeparator));
         if (values.length != entries.size()) {
             return null;
         }
@@ -136,16 +136,16 @@ public final class ComplexValueConverter<T> implements ValueConverter<T> {
 
     public static class Builder<T> {
         private final List<Entry<T>> entries;
-        private String rawStringSeparator;
+        private String stringSeparator;
         private Supplier<T> constructor;
 
         private Builder() {
             entries = new ArrayList<>();
-            rawStringSeparator = "||";
+            stringSeparator = "||";
         }
 
-        public Builder<T> rawStringSeparator(String rawStringSeparator) {
-            this.rawStringSeparator = rawStringSeparator;
+        public Builder<T> stringSeparator(String rawStringSeparator) {
+            this.stringSeparator = rawStringSeparator;
             return this;
         }
 
@@ -155,7 +155,7 @@ public final class ComplexValueConverter<T> implements ValueConverter<T> {
         }
 
         @SuppressWarnings("unchecked")
-        public <V> Builder<T> entry(ValueConverter<T> converter, Function<T, V> getter, BiFunction<T, V, T> setter) {
+        public <V> Builder<T> entry(ValueConverter<V> converter, Function<T, V> getter, BiFunction<T, V, T> setter) {
             ValueConverter<Object> objectConverter = (ValueConverter<Object>) converter;
             Function<T, Object> objectGetter = (Function<T, Object>) getter;
             BiFunction<T, Object, T> objectSetter = (BiFunction<T, Object, T>) setter;
@@ -171,7 +171,7 @@ public final class ComplexValueConverter<T> implements ValueConverter<T> {
             if (entries.isEmpty()) {
                 throw new IllegalStateException("Entries are empty");
             }
-            return new ComplexValueConverter<>(rawStringSeparator, entries, constructor);
+            return new ComplexValueConverter<>(stringSeparator, entries, constructor);
         }
     }
 }

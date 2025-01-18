@@ -24,7 +24,6 @@ me.hsgamer.topper.spigot.plugin.manager
 me.hsgamer.topper.spigot.storage.simple
 me.hsgamer.topper.spigot.storage.simple.supplier
 me.hsgamer.topper.storage.core
-me.hsgamer.topper.storage.number
 me.hsgamer.topper.storage.simple.builder
 me.hsgamer.topper.storage.simple.converter
 me.hsgamer.topper.storage.simple.setting

@@ -69,7 +69,7 @@ public class ConfigStorageSupplier implements DataStorageSupplier {
 
                     @Override
                     public void commit() {
-                        map.forEach((k, v) -> config.set(keyConverter.toRawString(k), valueConverter.toRawString(v)));
+                        map.forEach((k, v) -> config.set(valueConverter.toRawString(v), keyConverter.toRawString(k)));
                         removeSet.forEach(key -> config.remove(keyConverter.toRawString(key)));
                         config.save();
                     }

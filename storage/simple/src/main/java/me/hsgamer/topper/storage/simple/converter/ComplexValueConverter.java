@@ -11,7 +11,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-public class ComplexValueConverter<T> implements ValueConverter<T> {
+public final class ComplexValueConverter<T> implements ValueConverter<T> {
     private final String rawStringSeparator;
     private final List<Entry<T>> entries;
     private final Supplier<T> constructor;

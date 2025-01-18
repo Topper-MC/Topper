@@ -35,6 +35,10 @@ public final class ComplexValueConverter<T> implements ValueConverter<T> {
         this.sqlColumnDefinitions = sqlColumnDefinitions.toArray(new String[0]);
     }
 
+    public static <T> Builder<T> builder() {
+        return new Builder<>();
+    }
+
     @Override
     public @NotNull String toRawString(@NotNull T value) {
         StringJoiner joiner = new StringJoiner(rawStringSeparator);
@@ -131,9 +135,14 @@ public final class ComplexValueConverter<T> implements ValueConverter<T> {
     }
 
     public static class Builder<T> {
-        private final List<Entry<T>> entries = new ArrayList<>();
-        private String rawStringSeparator = "||";
+        private final List<Entry<T>> entries;
+        private String rawStringSeparator;
         private Supplier<T> constructor;
+
+        private Builder() {
+            entries = new ArrayList<>();
+            rawStringSeparator = "||";
+        }
 
         public Builder<T> rawStringSeparator(String rawStringSeparator) {
             this.rawStringSeparator = rawStringSeparator;

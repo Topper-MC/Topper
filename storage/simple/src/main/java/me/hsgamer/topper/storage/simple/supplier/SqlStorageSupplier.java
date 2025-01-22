@@ -11,14 +11,21 @@ import me.hsgamer.topper.storage.simple.converter.ValueConverter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public abstract class SqlStorageSupplier implements DataStorageSupplier {
     protected final Logger logger = LoggerProvider.getLogger(getClass());
+    private final Lock lock = new ReentrantLock();
 
     protected abstract Connection getConnection() throws SQLException;
 
     protected abstract void flushConnection(Connection connection);
+
+    protected boolean shouldLockWhenModify() {
+        return false;
+    }
 
     protected abstract List<String> toSaveStatement(String name, String[] keyColumns, String[] valueColumns);
 
@@ -86,6 +93,9 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
 
             @Override
             public Optional<Modifier<K, V>> modify() {
+                if (shouldLockWhenModify()) {
+                    lock.lock();
+                }
                 try {
                     Connection connection = getConnection();
                     Modifier<K, V> modifier = new Modifier<K, V>() {
@@ -144,6 +154,9 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                                 logger.log(LogLevel.ERROR, "Failed to commit", e);
                             } finally {
                                 flushConnection(connection);
+                                if (shouldLockWhenModify()) {
+                                    lock.unlock();
+                                }
                             }
                         }
 
@@ -155,6 +168,9 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                                 logger.log(LogLevel.ERROR, "Failed to rollback", e);
                             } finally {
                                 flushConnection(connection);
+                                if (shouldLockWhenModify()) {
+                                    lock.unlock();
+                                }
                             }
                         }
                     };

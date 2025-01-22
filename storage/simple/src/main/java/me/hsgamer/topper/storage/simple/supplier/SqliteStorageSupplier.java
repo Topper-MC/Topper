@@ -46,6 +46,11 @@ public class SqliteStorageSupplier extends SqlStorageSupplier {
     }
 
     @Override
+    protected boolean shouldLockWhenModify() {
+        return true;
+    }
+
+    @Override
     protected List<String> toSaveStatement(String name, String[] keyColumns, String[] valueColumns) {
         StringBuilder insertStatement = new StringBuilder("INSERT OR IGNORE INTO `")
                 .append(name)

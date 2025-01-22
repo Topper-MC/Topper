@@ -3,7 +3,10 @@ package me.hsgamer.topper.storage.simple.supplier;
 import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.hscore.database.client.sql.java.JavaSqlClient;
 import me.hsgamer.hscore.database.driver.mysql.MySqlDriver;
+import me.hsgamer.hscore.logger.common.LogLevel;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -18,8 +21,19 @@ public class MySqlStorageSupplier extends SqlStorageSupplier {
     }
 
     @Override
-    public JavaSqlClient getClient() {
-        return client;
+    protected Connection getConnection() throws SQLException {
+        Connection connection = client.getConnection();
+        connection.setAutoCommit(false);
+        return connection;
+    }
+
+    @Override
+    protected void flushConnection(Connection connection) {
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            logger.log(LogLevel.ERROR, "Failed to close connection", e);
+        }
     }
 
     @Override

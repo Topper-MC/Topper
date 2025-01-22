@@ -201,6 +201,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     StatementBuilder.create(connection)
                             .setStatement(statement.toString())
                             .update();
+                    connection.commit();
                 } catch (SQLException e) {
                     logger.log(LogLevel.ERROR, "Failed to create table", e);
                 } finally {

@@ -1,6 +1,7 @@
 package me.hsgamer.topper.storage.simple.supplier;
 
 import me.hsgamer.hscore.database.client.sql.BatchBuilder;
+import me.hsgamer.hscore.database.client.sql.SqlClient;
 import me.hsgamer.hscore.database.client.sql.StatementBuilder;
 import me.hsgamer.hscore.logger.common.LogLevel;
 import me.hsgamer.hscore.logger.common.Logger;
@@ -16,13 +17,25 @@ import java.util.stream.Collectors;
 public abstract class SqlStorageSupplier implements DataStorageSupplier {
     protected final Logger logger = LoggerProvider.getLogger(getClass());
 
-    protected abstract Connection getConnection() throws SQLException;
-
-    protected abstract void flushConnection(Connection connection);
+    protected abstract SqlClient<?> getClient();
 
     protected abstract List<String> toSaveStatement(String name, String[] keyColumns, String[] valueColumns);
 
     protected abstract List<Object[]> toSaveValues(Object[] keys, Object[] values);
+
+    private Connection getConnection() throws SQLException {
+        Connection connection = getClient().getConnection();
+        connection.setAutoCommit(false);
+        return connection;
+    }
+
+    private void flushConnection(Connection connection) {
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            logger.log(LogLevel.ERROR, "Failed to close connection", e);
+        }
+    }
 
     @Override
     public <K, V> DataStorage<K, V> getStorage(String name, ValueConverter<K> keyConverter, ValueConverter<V> valueConverter) {

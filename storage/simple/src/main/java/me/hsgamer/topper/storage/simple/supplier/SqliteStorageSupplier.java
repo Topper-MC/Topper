@@ -3,18 +3,14 @@ package me.hsgamer.topper.storage.simple.supplier;
 import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.hscore.database.client.sql.java.JavaSqlClient;
 import me.hsgamer.hscore.database.driver.sqlite.SqliteFileDriver;
-import me.hsgamer.hscore.logger.common.LogLevel;
 
 import java.io.File;
-import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class SqliteStorageSupplier extends SqlStorageSupplier {
     private final JavaSqlClient client;
-    private final AtomicReference<Connection> connectionReference = new AtomicReference<>();
 
     public SqliteStorageSupplier(Consumer<Setting> databaseSettingConsumer, File baseHolder) {
         Setting setting = Setting.create(new SqliteFileDriver(baseHolder));
@@ -23,30 +19,12 @@ public class SqliteStorageSupplier extends SqlStorageSupplier {
     }
 
     @Override
-    protected Connection getConnection() {
-        return connectionReference.updateAndGet(connection -> {
-            try {
-                if (connection == null || connection.isClosed()) {
-                    Connection clientConnection = client.getConnection();
-                    clientConnection.setAutoCommit(false);
-                    return clientConnection;
-                } else {
-                    return connection;
-                }
-            } catch (Exception e) {
-                logger.log(LogLevel.ERROR, "Failed to get the connection", e);
-                return null;
-            }
-        });
+    public JavaSqlClient getClient() {
+        return client;
     }
 
     @Override
-    protected void flushConnection(Connection connection) {
-        // EMPTY
-    }
-
-    @Override
-    protected boolean shouldLockWhenModify() {
+    protected boolean isSingleThread() {
         return true;
     }
 
@@ -114,17 +92,5 @@ public class SqliteStorageSupplier extends SqlStorageSupplier {
                 insertValues,
                 updateValues
         );
-    }
-
-    @Override
-    public void disable() {
-        Connection connection = connectionReference.getAndSet(null);
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-            }
-        } catch (Exception e) {
-            logger.log(LogLevel.ERROR, "Failed to close the connection", e);
-        }
     }
 }

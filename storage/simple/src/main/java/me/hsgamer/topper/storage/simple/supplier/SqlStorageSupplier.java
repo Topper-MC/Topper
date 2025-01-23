@@ -1,6 +1,7 @@
 package me.hsgamer.topper.storage.simple.supplier;
 
 import me.hsgamer.hscore.database.client.sql.BatchBuilder;
+import me.hsgamer.hscore.database.client.sql.SqlClient;
 import me.hsgamer.hscore.database.client.sql.StatementBuilder;
 import me.hsgamer.hscore.logger.common.LogLevel;
 import me.hsgamer.hscore.logger.common.Logger;
@@ -19,11 +20,9 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
     protected final Logger logger = LoggerProvider.getLogger(getClass());
     private final Lock lock = new ReentrantLock();
 
-    protected abstract Connection getConnection() throws SQLException;
+    protected abstract SqlClient<?> getClient();
 
-    protected abstract void flushConnection(Connection connection);
-
-    protected boolean shouldLockWhenModify() {
+    protected boolean isSingleThread() {
         return false;
     }
 
@@ -31,11 +30,38 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
 
     protected abstract List<Object[]> toSaveValues(Object[] keys, Object[] values);
 
+    private Connection getConnection() throws SQLException {
+        Connection connection = getClient().getConnection();
+        connection.setAutoCommit(false);
+        return connection;
+    }
+
+    private void flushConnection(Connection connection) {
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            logger.log(LogLevel.ERROR, "Failed to close connection", e);
+        }
+    }
+
+    private void lock() {
+        if (isSingleThread()) {
+            lock.lock();
+        }
+    }
+
+    private void unlock() {
+        if (isSingleThread()) {
+            lock.unlock();
+        }
+    }
+
     @Override
     public <K, V> DataStorage<K, V> getStorage(String name, ValueConverter<K> keyConverter, ValueConverter<V> valueConverter) {
         return new DataStorage<K, V>() {
             @Override
             public Map<K, V> load() {
+                lock();
                 Connection connection = null;
                 try {
                     connection = getConnection();
@@ -52,11 +78,13 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     if (connection != null) {
                         flushConnection(connection);
                     }
+                    unlock();
                 }
             }
 
             @Override
             public Optional<V> load(K key) {
+                lock();
                 Connection connection = null;
                 try {
                     connection = getConnection();
@@ -88,14 +116,13 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     if (connection != null) {
                         flushConnection(connection);
                     }
+                    unlock();
                 }
             }
 
             @Override
             public Optional<Modifier<K, V>> modify() {
-                if (shouldLockWhenModify()) {
-                    lock.lock();
-                }
+                lock();
                 try {
                     Connection connection = getConnection();
                     Modifier<K, V> modifier = new Modifier<K, V>() {
@@ -154,9 +181,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                                 logger.log(LogLevel.ERROR, "Failed to commit", e);
                             } finally {
                                 flushConnection(connection);
-                                if (shouldLockWhenModify()) {
-                                    lock.unlock();
-                                }
+                                unlock();
                             }
                         }
 
@@ -168,21 +193,21 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                                 logger.log(LogLevel.ERROR, "Failed to rollback", e);
                             } finally {
                                 flushConnection(connection);
-                                if (shouldLockWhenModify()) {
-                                    lock.unlock();
-                                }
+                                unlock();
                             }
                         }
                     };
                     return Optional.of(modifier);
                 } catch (SQLException e) {
                     logger.log(LogLevel.ERROR, "Failed to get connection", e);
+                    unlock();
                     return Optional.empty();
                 }
             }
 
             @Override
             public void onRegister() {
+                lock();
                 Connection connection = null;
                 try {
                     connection = getConnection();
@@ -224,6 +249,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     if (connection != null) {
                         flushConnection(connection);
                     }
+                    unlock();
                 }
             }
         };

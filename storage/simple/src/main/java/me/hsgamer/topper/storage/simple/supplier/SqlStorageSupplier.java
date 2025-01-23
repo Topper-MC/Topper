@@ -30,20 +30,6 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
 
     protected abstract List<Object[]> toSaveValues(Object[] keys, Object[] values);
 
-    private Connection getConnection() throws SQLException {
-        Connection connection = getClient().getConnection();
-        connection.setAutoCommit(false);
-        return connection;
-    }
-
-    private void flushConnection(Connection connection) {
-        try {
-            connection.close();
-        } catch (SQLException e) {
-            logger.log(LogLevel.ERROR, "Failed to close connection", e);
-        }
-    }
-
     private void lock() {
         if (isSingleThread()) {
             lock.lock();
@@ -62,9 +48,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             @Override
             public Map<K, V> load() {
                 lock();
-                Connection connection = null;
-                try {
-                    connection = getConnection();
+                try (Connection connection = getClient().getConnection()) {
                     return StatementBuilder.create(connection)
                             .setStatement("SELECT * FROM `" + name + "`;")
                             .queryList(resultSet -> new AbstractMap.SimpleEntry<>(keyConverter.fromSqlResultSet(resultSet), valueConverter.fromSqlResultSet(resultSet)))
@@ -75,9 +59,6 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     logger.log(LogLevel.ERROR, "Failed to load top holder", e);
                     return Collections.emptyMap();
                 } finally {
-                    if (connection != null) {
-                        flushConnection(connection);
-                    }
                     unlock();
                 }
             }
@@ -85,9 +66,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             @Override
             public Optional<V> load(K key) {
                 lock();
-                Connection connection = null;
-                try {
-                    connection = getConnection();
+                try (Connection connection = getClient().getConnection()) {
                     String[] keyColumns = keyConverter.getSqlColumns();
                     Object[] keyValues = keyConverter.toSqlValues(key);
 
@@ -113,9 +92,6 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     logger.log(LogLevel.ERROR, "Failed to load top holder", e);
                     return Optional.empty();
                 } finally {
-                    if (connection != null) {
-                        flushConnection(connection);
-                    }
                     unlock();
                 }
             }
@@ -124,7 +100,8 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             public Optional<Modifier<K, V>> modify() {
                 lock();
                 try {
-                    Connection connection = getConnection();
+                    Connection connection = getClient().getConnection();
+                    connection.setAutoCommit(false);
                     Modifier<K, V> modifier = new Modifier<K, V>() {
                         @Override
                         public void save(Map<K, V> map) throws SQLException {
@@ -173,6 +150,14 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                             batchBuilder.execute();
                         }
 
+                        private void close() {
+                            try {
+                                connection.close();
+                            } catch (SQLException e) {
+                                logger.log(LogLevel.ERROR, "Failed to close connection", e);
+                            }
+                        }
+
                         @Override
                         public void commit() {
                             try {
@@ -180,7 +165,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                             } catch (SQLException e) {
                                 logger.log(LogLevel.ERROR, "Failed to commit", e);
                             } finally {
-                                flushConnection(connection);
+                                close();
                                 unlock();
                             }
                         }
@@ -192,7 +177,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                             } catch (SQLException e) {
                                 logger.log(LogLevel.ERROR, "Failed to rollback", e);
                             } finally {
-                                flushConnection(connection);
+                                close();
                                 unlock();
                             }
                         }
@@ -208,9 +193,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             @Override
             public void onRegister() {
                 lock();
-                Connection connection = null;
-                try {
-                    connection = getConnection();
+                try (Connection connection = getClient().getConnection()) {
                     String[] keyColumns = keyConverter.getSqlColumns();
                     String[] keyColumnDefinitions = keyConverter.getSqlColumnDefinitions();
                     String[] valueColumns = valueConverter.getSqlColumns();
@@ -242,13 +225,9 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                     StatementBuilder.create(connection)
                             .setStatement(statement.toString())
                             .update();
-                    connection.commit();
                 } catch (SQLException e) {
                     logger.log(LogLevel.ERROR, "Failed to create table", e);
                 } finally {
-                    if (connection != null) {
-                        flushConnection(connection);
-                    }
                     unlock();
                 }
             }

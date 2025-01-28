@@ -13,15 +13,18 @@ public class SimpleValueConverter<T> implements ValueConverter<T> {
     private final Function<@NotNull T, @NotNull String> toStringConverter;
     private final Function<@NotNull String, @Nullable T> fromStringConverter;
     private final String valueName;
-    private final boolean isStringNative;
-    private final int stringMaxLength;
+    private final String sqlType;
 
-    public SimpleValueConverter(Function<@NotNull T, @NotNull String> toStringConverter, Function<@NotNull String, @Nullable T> fromStringConverter, String valueName, boolean isStringNative, int stringMaxLength) {
+    public SimpleValueConverter(Function<@NotNull T, @NotNull String> toStringConverter, Function<@NotNull String, @Nullable T> fromStringConverter, String valueName, String sqlType) {
         this.toStringConverter = toStringConverter;
         this.fromStringConverter = fromStringConverter;
         this.valueName = valueName;
-        this.isStringNative = isStringNative;
-        this.stringMaxLength = stringMaxLength;
+        this.sqlType = sqlType;
+    }
+
+    public SimpleValueConverter(Function<@NotNull T, @NotNull String> toStringConverter, Function<@NotNull String, @Nullable T> fromStringConverter, String valueName, boolean isStringNationalized, int stringMaxLength) {
+        this(toStringConverter, fromStringConverter, valueName, (isStringNationalized ? "N" : "") + "VARCHAR(" + stringMaxLength + ")");
+
     }
 
     @Override
@@ -52,7 +55,7 @@ public class SimpleValueConverter<T> implements ValueConverter<T> {
 
     @Override
     public String[] getSqlColumnDefinitions() {
-        return new String[]{(isStringNative ? "N" : "") + "VARCHAR(" + stringMaxLength + ") NOT NULL"};
+        return new String[]{sqlType + " NOT NULL"};
     }
 
     @Override

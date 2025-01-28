@@ -2,6 +2,7 @@ package me.hsgamer.topper.spigot.plugin.holder;
 
 import io.github.projectunified.minelib.scheduler.async.AsyncScheduler;
 import io.github.projectunified.minelib.scheduler.global.GlobalScheduler;
+import me.hsgamer.hscore.common.CollectionUtils;
 import me.hsgamer.topper.agent.core.Agent;
 import me.hsgamer.topper.agent.core.DataEntryAgent;
 import me.hsgamer.topper.agent.holder.AgentDataHolder;
@@ -19,11 +20,9 @@ import me.hsgamer.topper.spigot.plugin.holder.provider.ValueProvider;
 import me.hsgamer.topper.spigot.plugin.manager.TopManager;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
     private final ValueProvider valueProvider;
@@ -50,6 +49,13 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
         updateAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskUpdateEntryPerTick());
         addEntryAgent(updateAgent);
         addAgent(new SpigotRunnableAgent(updateAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
+        List<String> ignorePermissions = CollectionUtils.createStringListFromObject(map.get("ignore-permission"), true);
+        if (!ignorePermissions.isEmpty()) {
+            updateAgent.addFilter(uuid -> {
+                Player player = Bukkit.getPlayer(uuid);
+                return player == null || ignorePermissions.stream().noneMatch(player::hasPermission);
+            });
+        }
 
         this.snapshotAgent = new SnapshotAgent<>(this);
         boolean reverseOrder = Optional.ofNullable(map.get("reverse")).map(String::valueOf).map(Boolean::parseBoolean).orElse(true);

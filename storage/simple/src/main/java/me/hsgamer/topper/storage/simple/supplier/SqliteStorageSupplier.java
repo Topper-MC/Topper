@@ -3,18 +3,18 @@ package me.hsgamer.topper.storage.simple.supplier;
 import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.hscore.database.client.sql.java.JavaSqlClient;
 import me.hsgamer.hscore.database.driver.sqlite.SqliteFileDriver;
+import me.hsgamer.topper.storage.simple.setting.DatabaseSetting;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class SqliteStorageSupplier extends SqlStorageSupplier {
     private final JavaSqlClient client;
 
-    public SqliteStorageSupplier(Consumer<Setting> databaseSettingConsumer, File baseHolder) {
+    public SqliteStorageSupplier(DatabaseSetting databaseSetting, File baseHolder) {
         Setting setting = Setting.create(new SqliteFileDriver(baseHolder));
-        databaseSettingConsumer.accept(setting);
+        applyDatabaseSetting(databaseSetting, setting);
         client = new JavaSqlClient(setting);
     }
 

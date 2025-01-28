@@ -1,5 +1,6 @@
 package me.hsgamer.topper.storage.simple.supplier;
 
+import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.hscore.database.client.sql.BatchBuilder;
 import me.hsgamer.hscore.database.client.sql.SqlClient;
 import me.hsgamer.hscore.database.client.sql.StatementBuilder;
@@ -8,6 +9,7 @@ import me.hsgamer.hscore.logger.common.Logger;
 import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.storage.core.DataStorage;
 import me.hsgamer.topper.storage.simple.converter.ValueConverter;
+import me.hsgamer.topper.storage.simple.setting.DatabaseSetting;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -19,6 +21,19 @@ import java.util.stream.Collectors;
 public abstract class SqlStorageSupplier implements DataStorageSupplier {
     protected final Logger logger = LoggerProvider.getLogger(getClass());
     private final Lock lock = new ReentrantLock();
+
+    protected static void applyDatabaseSetting(DatabaseSetting databaseSetting, Setting setting) {
+        setting.setHost(databaseSetting.getHost());
+        setting.setPort(databaseSetting.getPort());
+        setting.setDatabaseName(databaseSetting.getDatabase());
+        setting.setUsername(databaseSetting.getUsername());
+        setting.setPassword(databaseSetting.getPassword());
+        if (databaseSetting.isUseSSL()) {
+            setting.setDriverProperty("useSSL", "true");
+        }
+        setting.setDriverProperties(databaseSetting.getDriverProperties());
+        setting.setClientProperties(databaseSetting.getClientProperties());
+    }
 
     protected abstract SqlClient<?> getClient();
 

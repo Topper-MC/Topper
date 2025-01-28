@@ -1,15 +1,14 @@
 package me.hsgamer.topper.storage.simple.supplier;
 
-import me.hsgamer.hscore.database.Setting;
+import me.hsgamer.topper.storage.simple.setting.DatabaseSetting;
 
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class NewSqliteStorageSupplier extends SqliteStorageSupplier {
-    public NewSqliteStorageSupplier(Consumer<Setting> databaseSettingConsumer, File baseFolder) {
-        super(databaseSettingConsumer, baseFolder);
+    public NewSqliteStorageSupplier(DatabaseSetting databaseSetting, File baseFolder) {
+        super(databaseSetting, baseFolder);
     }
 
     @Override

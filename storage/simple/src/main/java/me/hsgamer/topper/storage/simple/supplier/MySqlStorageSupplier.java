@@ -3,17 +3,17 @@ package me.hsgamer.topper.storage.simple.supplier;
 import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.hscore.database.client.sql.java.JavaSqlClient;
 import me.hsgamer.hscore.database.driver.mysql.MySqlDriver;
+import me.hsgamer.topper.storage.simple.setting.DatabaseSetting;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class MySqlStorageSupplier extends SqlStorageSupplier {
     private final JavaSqlClient client;
 
-    public MySqlStorageSupplier(Consumer<Setting> databaseSettingConsumer) {
+    public MySqlStorageSupplier(DatabaseSetting databaseSetting) {
         Setting setting = Setting.create(new MySqlDriver());
-        databaseSettingConsumer.accept(setting);
+        applyDatabaseSetting(databaseSetting, setting);
         client = new JavaSqlClient(setting);
     }
 

@@ -2,14 +2,13 @@ package me.hsgamer.topper.spigot.plugin.config;
 
 import me.hsgamer.hscore.config.annotation.Comment;
 import me.hsgamer.hscore.config.annotation.ConfigPath;
-import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.topper.spigot.plugin.config.converter.StringObjectMapConverter;
+import me.hsgamer.topper.storage.simple.setting.DatabaseSetting;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.Consumer;
 
-public interface DatabaseConfig extends Consumer<Setting> {
+public interface DatabaseConfig extends DatabaseSetting {
     @ConfigPath("host")
     @Comment("The host of the database")
     default String getHost() {
@@ -56,19 +55,5 @@ public interface DatabaseConfig extends Consumer<Setting> {
     @Comment("The client properties")
     default Map<String, Object> getClientProperties() {
         return Collections.emptyMap();
-    }
-
-    @Override
-    default void accept(Setting setting) {
-        setting.setHost(getHost());
-        setting.setPort(getPort());
-        setting.setDatabaseName(getDatabase());
-        setting.setUsername(getUsername());
-        setting.setPassword(getPassword());
-        if (isUseSSL()) {
-            setting.setDriverProperty("useSSL", "true");
-        }
-        setting.setDriverProperties(getDriverProperties());
-        setting.setClientProperties(getClientProperties());
     }
 }

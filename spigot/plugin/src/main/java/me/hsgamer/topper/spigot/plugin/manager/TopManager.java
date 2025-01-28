@@ -3,7 +3,6 @@ package me.hsgamer.topper.spigot.plugin.manager;
 import io.github.projectunified.minelib.plugin.base.Loadable;
 import me.hsgamer.hscore.bukkit.config.BukkitConfig;
 import me.hsgamer.hscore.config.proxy.ConfigGenerator;
-import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 import me.hsgamer.topper.spigot.plugin.config.DatabaseConfig;
 import me.hsgamer.topper.spigot.plugin.config.MainConfig;
@@ -13,11 +12,11 @@ import me.hsgamer.topper.storage.simple.builder.DataStorageBuilder;
 import me.hsgamer.topper.storage.simple.converter.NumberConverter;
 import me.hsgamer.topper.storage.simple.converter.UUIDConverter;
 import me.hsgamer.topper.storage.simple.setting.DataStorageSetting;
+import me.hsgamer.topper.storage.simple.setting.DatabaseSetting;
 import me.hsgamer.topper.storage.simple.supplier.DataStorageSupplier;
 
 import java.io.File;
 import java.util.*;
-import java.util.function.Consumer;
 
 public class TopManager implements Loadable {
     private final Map<String, NumberTopHolder> topHolders = new HashMap<>();
@@ -34,7 +33,7 @@ public class TopManager implements Loadable {
                 instance.get(MainConfig.class).getStorageType(),
                 new DataStorageSetting() {
                     @Override
-                    public Consumer<Setting> getDatabaseSettingModifier() {
+                    public DatabaseSetting getDatabaseSetting() {
                         return ConfigGenerator.newInstance(DatabaseConfig.class, new BukkitConfig(instance, "database.yml"));
                     }
 

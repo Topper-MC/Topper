@@ -12,9 +12,9 @@ public class DataStorageBuilder extends Builder<DataStorageSetting, DataStorageS
     public DataStorageBuilder() {
         this.defaultSupplier = setting -> new FlatStorageSupplier(setting.getBaseFolder());
         register(defaultSupplier, "flat", "properties", "");
-        register(setting -> new SqliteStorageSupplier(setting.getDatabaseSettingModifier(), setting.getBaseFolder()), "sqlite", "sqlite3");
-        register(setting -> new NewSqliteStorageSupplier(setting.getDatabaseSettingModifier(), setting.getBaseFolder()), "new-sqlite", "new-sqlite3");
-        register(setting -> new MySqlStorageSupplier(setting.getDatabaseSettingModifier()), "mysql", "mysql-connector-java", "mysql-connector");
+        register(setting -> new SqliteStorageSupplier(setting.getDatabaseSetting(), setting.getBaseFolder()), "sqlite", "sqlite3");
+        register(setting -> new NewSqliteStorageSupplier(setting.getDatabaseSetting(), setting.getBaseFolder()), "new-sqlite", "new-sqlite3");
+        register(setting -> new MySqlStorageSupplier(setting.getDatabaseSetting()), "mysql", "mysql-connector-java", "mysql-connector");
     }
 
     public DataStorageSupplier buildSupplier(String type, DataStorageSetting setting) {

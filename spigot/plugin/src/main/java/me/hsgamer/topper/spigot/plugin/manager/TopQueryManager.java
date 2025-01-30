@@ -44,7 +44,7 @@ public class TopQueryManager extends SnapshotQueryManager<UUID, Double, NumberTo
     }
 
     @Override
-    protected @NotNull UUID getKeyFromActor(@NotNull OfflinePlayer actor) {
+    protected @NotNull UUID getKeyFromActor(@NotNull OfflinePlayer actor, @NotNull NumberTopHolder holder) {
         return actor.getUniqueId();
     }
 }

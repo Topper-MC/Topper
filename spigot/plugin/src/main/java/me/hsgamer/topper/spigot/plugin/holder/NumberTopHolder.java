@@ -57,7 +57,7 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
             });
         }
 
-        this.snapshotAgent = new SnapshotAgent<>(this);
+        this.snapshotAgent = SnapshotAgent.create(this);
         boolean reverseOrder = Optional.ofNullable(map.get("reverse")).map(String::valueOf).map(Boolean::parseBoolean).orElse(true);
         snapshotAgent.setComparator(reverseOrder ? Comparator.reverseOrder() : Comparator.naturalOrder());
         addAgent(snapshotAgent);

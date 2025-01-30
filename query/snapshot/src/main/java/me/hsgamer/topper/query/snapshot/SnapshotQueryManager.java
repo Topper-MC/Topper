@@ -7,6 +7,8 @@ import me.hsgamer.topper.query.core.QueryManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
+
 public abstract class SnapshotQueryManager<K, V, H extends DataHolder<K, V>, A> extends QueryManager<K, V, H, A> {
     protected SnapshotQueryManager() {
         registerFunction("top_name", (holder, args) -> {
@@ -16,7 +18,7 @@ public abstract class SnapshotQueryManager<K, V, H extends DataHolder<K, V>, A> 
             } catch (NumberFormatException ignored) {
                 // IGNORED
             }
-            K key = getSnapshotAgent(holder).getEntryByIndex(i - 1).map(DataEntry::getKey).orElse(null);
+            K key = getSnapshotAgent(holder).getSnapshotByIndex(i - 1).map(Map.Entry::getKey).orElse(null);
             return getDisplayName(key, holder);
         });
         registerFunction("top_key", (holder, args) -> {
@@ -26,7 +28,7 @@ public abstract class SnapshotQueryManager<K, V, H extends DataHolder<K, V>, A> 
             } catch (NumberFormatException ignored) {
                 // IGNORED
             }
-            K key = getSnapshotAgent(holder).getEntryByIndex(i - 1).map(DataEntry::getKey).orElse(null);
+            K key = getSnapshotAgent(holder).getSnapshotByIndex(i - 1).map(Map.Entry::getKey).orElse(null);
             return getDisplayKey(key, holder);
         });
         registerFunction("top_value", (holder, args) -> {
@@ -40,7 +42,7 @@ public abstract class SnapshotQueryManager<K, V, H extends DataHolder<K, V>, A> 
 
             String valueArgs = split.length > 1 ? split[1] : "";
 
-            V value = getSnapshotAgent(holder).getEntryByIndex(i - 1).map(DataEntry::getValue).orElse(null);
+            V value = getSnapshotAgent(holder).getSnapshotByIndex(i - 1).map(Map.Entry::getValue).orElse(null);
             return getDisplayValue(value, holder, valueArgs);
         });
         registerFunction("top_value_raw", (holder, args) -> {
@@ -50,7 +52,7 @@ public abstract class SnapshotQueryManager<K, V, H extends DataHolder<K, V>, A> 
             } catch (NumberFormatException ignored) {
                 // IGNORED
             }
-            V value = getSnapshotAgent(holder).getEntryByIndex(i - 1).map(DataEntry::getValue).orElse(null);
+            V value = getSnapshotAgent(holder).getSnapshotByIndex(i - 1).map(Map.Entry::getValue).orElse(null);
             return getDisplayValue(value, holder, "raw");
         });
         registerActorFunction("top_rank", (actor, holder) -> {

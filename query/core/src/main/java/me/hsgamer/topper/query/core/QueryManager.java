@@ -14,6 +14,10 @@ public abstract class QueryManager<K, V, H extends DataHolder<K, V>, A> {
 
     protected abstract Optional<H> getHolder(String name);
 
+    protected boolean isSingleHolder() {
+        return false;
+    }
+
     protected void registerAction(String name, QueryAction<K, V, H, A> action) {
         actions.put(name, action);
     }
@@ -31,17 +35,29 @@ public abstract class QueryManager<K, V, H extends DataHolder<K, V>, A> {
 
     @Nullable
     public String get(@Nullable A actor, String query) {
-        String[] args = query.split(";", 3);
-        if (args.length < 2) return null;
-        Optional<H> optionalHolder = getHolder(args[0]);
+        String holderName;
+        String actionName;
+        String args;
+        if (isSingleHolder()) {
+            String[] split = query.split(";", 2);
+            holderName = "";
+            actionName = split[0];
+            args = split.length > 1 ? split[1] : "";
+        } else {
+            String[] split = query.split(";", 3);
+            if (split.length < 2) return null;
+            holderName = split[0];
+            actionName = split[1];
+            args = split.length > 2 ? split[2] : "";
+        }
+
+        Optional<H> optionalHolder = getHolder(holderName);
         if (!optionalHolder.isPresent()) return null;
         H holder = optionalHolder.get();
 
-        QueryAction<K, V, H, A> action = actions.get(args[1]);
+        QueryAction<K, V, H, A> action = actions.get(actionName);
         if (action == null) return null;
 
-        String newArgs = args.length > 2 ? args[2] : "";
-
-        return action.get(actor, holder, newArgs);
+        return action.get(actor, holder, args);
     }
 }

@@ -1,9 +1,11 @@
 package me.hsgamer.topper.storage.simple.supplier;
 
+import me.hsgamer.hscore.database.Driver;
 import me.hsgamer.hscore.database.Setting;
 import me.hsgamer.hscore.database.client.sql.BatchBuilder;
 import me.hsgamer.hscore.database.client.sql.SqlClient;
 import me.hsgamer.hscore.database.client.sql.StatementBuilder;
+import me.hsgamer.hscore.database.client.sql.java.JavaSqlClient;
 import me.hsgamer.hscore.logger.common.LogLevel;
 import me.hsgamer.hscore.logger.common.Logger;
 import me.hsgamer.hscore.logger.provider.LoggerProvider;
@@ -20,9 +22,18 @@ import java.util.stream.Collectors;
 
 public abstract class SqlStorageSupplier implements DataStorageSupplier {
     protected final Logger logger = LoggerProvider.getLogger(getClass());
+    private final SqlClient<?> client;
     private final Lock lock = new ReentrantLock();
 
-    protected static void applyDatabaseSetting(DatabaseSetting databaseSetting, Setting setting) {
+    protected SqlStorageSupplier(SqlClient<?> client) {
+        this.client = client;
+    }
+
+    protected SqlStorageSupplier(Driver driver, DatabaseSetting databaseSetting) {
+        this(new JavaSqlClient(applyDatabaseSetting(databaseSetting, Setting.create(driver))));
+    }
+
+    protected static Setting applyDatabaseSetting(DatabaseSetting databaseSetting, Setting setting) {
         setting.setHost(databaseSetting.getHost());
         setting.setPort(databaseSetting.getPort());
         setting.setDatabaseName(databaseSetting.getDatabase());
@@ -33,9 +44,8 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
         }
         setting.setDriverProperties(databaseSetting.getDriverProperties());
         setting.setClientProperties(databaseSetting.getClientProperties());
+        return setting;
     }
-
-    protected abstract SqlClient<?> getClient();
 
     protected boolean isSingleThread() {
         return false;
@@ -63,7 +73,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             @Override
             public Map<K, V> load() {
                 lock();
-                try (Connection connection = getClient().getConnection()) {
+                try (Connection connection = client.getConnection()) {
                     return StatementBuilder.create(connection)
                             .setStatement("SELECT * FROM `" + name + "`;")
                             .queryList(resultSet -> new AbstractMap.SimpleEntry<>(keyConverter.fromSqlResultSet(resultSet), valueConverter.fromSqlResultSet(resultSet)))
@@ -81,7 +91,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             @Override
             public Optional<V> load(K key) {
                 lock();
-                try (Connection connection = getClient().getConnection()) {
+                try (Connection connection = client.getConnection()) {
                     String[] keyColumns = keyConverter.getSqlColumns();
                     Object[] keyValues = keyConverter.toSqlValues(key);
 
@@ -115,7 +125,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             public Optional<Modifier<K, V>> modify() {
                 lock();
                 try {
-                    Connection connection = getClient().getConnection();
+                    Connection connection = client.getConnection();
                     connection.setAutoCommit(false);
                     Modifier<K, V> modifier = new Modifier<K, V>() {
                         @Override
@@ -208,7 +218,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
             @Override
             public void onRegister() {
                 lock();
-                try (Connection connection = getClient().getConnection()) {
+                try (Connection connection = client.getConnection()) {
                     String[] keyColumns = keyConverter.getSqlColumns();
                     String[] keyColumnDefinitions = keyConverter.getSqlColumnDefinitions();
                     String[] valueColumns = valueConverter.getSqlColumns();

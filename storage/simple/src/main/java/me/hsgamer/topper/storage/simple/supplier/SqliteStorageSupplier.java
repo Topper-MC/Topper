@@ -1,7 +1,5 @@
 package me.hsgamer.topper.storage.simple.supplier;
 
-import me.hsgamer.hscore.database.Setting;
-import me.hsgamer.hscore.database.client.sql.java.JavaSqlClient;
 import me.hsgamer.hscore.database.driver.sqlite.SqliteFileDriver;
 import me.hsgamer.topper.storage.simple.setting.DatabaseSetting;
 
@@ -10,17 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public class SqliteStorageSupplier extends SqlStorageSupplier {
-    private final JavaSqlClient client;
-
     public SqliteStorageSupplier(DatabaseSetting databaseSetting, File baseHolder) {
-        Setting setting = Setting.create(new SqliteFileDriver(baseHolder));
-        applyDatabaseSetting(databaseSetting, setting);
-        client = new JavaSqlClient(setting);
-    }
-
-    @Override
-    public JavaSqlClient getClient() {
-        return client;
+        super(new SqliteFileDriver(baseHolder), databaseSetting);
     }
 
     @Override

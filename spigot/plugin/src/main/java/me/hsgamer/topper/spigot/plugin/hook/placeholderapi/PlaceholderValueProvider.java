@@ -1,4 +1,4 @@
-package me.hsgamer.topper.spigot.plugin.hook.papi;
+package me.hsgamer.topper.spigot.plugin.hook.placeholderapi;
 
 import me.clip.placeholderapi.PlaceholderAPI;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
@@ -9,11 +9,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-public class PlaceholderValueProvider extends NumberStringValueProvider {
+class PlaceholderValueProvider extends NumberStringValueProvider {
     private final String placeholder;
     private final boolean isOnlineOnly;
 
-    public PlaceholderValueProvider(TopperPlugin plugin, Map<String, Object> map) {
+    PlaceholderValueProvider(TopperPlugin plugin, Map<String, Object> map) {
         super(plugin, map);
         placeholder = Optional.ofNullable(map.get("placeholder")).map(Object::toString).orElse("");
         isOnlineOnly = Optional.ofNullable(map.get("online"))

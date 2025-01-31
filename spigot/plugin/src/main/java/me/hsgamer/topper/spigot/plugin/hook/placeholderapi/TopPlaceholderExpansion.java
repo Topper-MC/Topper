@@ -1,4 +1,4 @@
-package me.hsgamer.topper.spigot.plugin.hook.papi;
+package me.hsgamer.topper.spigot.plugin.hook.placeholderapi;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
@@ -6,10 +6,10 @@ import me.hsgamer.topper.spigot.plugin.manager.TopQueryManager;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
-public class TopPlaceholderExpansion extends PlaceholderExpansion {
+class TopPlaceholderExpansion extends PlaceholderExpansion {
     private final TopperPlugin instance;
 
-    public TopPlaceholderExpansion(TopperPlugin instance) {
+    TopPlaceholderExpansion(TopperPlugin instance) {
         this.instance = instance;
     }
 

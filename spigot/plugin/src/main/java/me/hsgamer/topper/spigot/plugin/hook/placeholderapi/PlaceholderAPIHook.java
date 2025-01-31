@@ -1,4 +1,4 @@
-package me.hsgamer.topper.spigot.plugin.hook.papi;
+package me.hsgamer.topper.spigot.plugin.hook.placeholderapi;
 
 import io.github.projectunified.minelib.plugin.base.Loadable;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;

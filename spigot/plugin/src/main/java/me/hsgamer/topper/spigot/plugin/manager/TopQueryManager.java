@@ -9,7 +9,6 @@ import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 import me.hsgamer.topper.spigot.plugin.holder.NumberTopHolder;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -28,7 +27,7 @@ public class TopQueryManager extends QueryManager<OfflinePlayer> {
             }
 
             @Override
-            protected @Nullable UUID getKey(@NotNull OfflinePlayer actor, @NotNull Context<UUID, Double, NumberTopHolder> context) {
+            protected @NotNull UUID getKey(@NotNull OfflinePlayer actor, @NotNull Context<UUID, Double, NumberTopHolder> context) {
                 return actor.getUniqueId();
             }
         });

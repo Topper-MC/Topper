@@ -4,5 +4,5 @@ main: me.hsgamer.topper.spigot.plugin.TopperPlugin
 api-version: 1.13
 softdepend:
   - PlaceholderAPI
-  - VarBlocks
+  - MiniPlaceholders
 folia-supported: true

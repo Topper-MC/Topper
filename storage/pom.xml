@@ -14,5 +14,6 @@
     <modules>
         <module>core</module>
         <module>simple</module>
+        <module>simple-config</module>
     </modules>
 </project>

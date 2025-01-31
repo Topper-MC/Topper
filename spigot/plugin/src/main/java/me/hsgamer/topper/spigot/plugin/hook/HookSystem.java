@@ -2,7 +2,6 @@ package me.hsgamer.topper.spigot.plugin.hook;
 
 import io.github.projectunified.minelib.plugin.base.Loadable;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
-import me.hsgamer.topper.spigot.plugin.hook.miniplaceholders.MiniPlaceholdersHook;
 import me.hsgamer.topper.spigot.plugin.hook.placeholderapi.PlaceholderAPIHook;
 
 import java.util.ArrayList;
@@ -23,9 +22,6 @@ public class HookSystem implements Loadable {
     private void registerHooks() {
         if (isPluginLoaded("PlaceholderAPI")) {
             hooks.add(new PlaceholderAPIHook(instance));
-        }
-        if (isPluginLoaded("MiniPlaceholders")) {
-            hooks.add(new MiniPlaceholdersHook(instance));
         }
     }
 

@@ -14,6 +14,8 @@ public abstract class NumberStringValueProvider implements ValueProvider {
     protected final TopperPlugin plugin;
     private final boolean isAsync;
     private final boolean showErrors;
+    private final boolean isFormatted;
+    private final char decimalSeparator;
 
     public NumberStringValueProvider(TopperPlugin plugin, Map<String, Object> map) {
         this.plugin = plugin;
@@ -27,17 +29,45 @@ public abstract class NumberStringValueProvider implements ValueProvider {
                 .map(String::toLowerCase)
                 .map(Boolean::parseBoolean)
                 .orElse(false);
+        isFormatted = Optional.ofNullable(map.get("formatted"))
+                .map(Object::toString)
+                .map(String::toLowerCase)
+                .map(Boolean::parseBoolean)
+                .orElse(false);
+        decimalSeparator = Optional.ofNullable(map.get("decimal-separator"))
+                .map(Object::toString)
+                .filter(s -> !s.isEmpty())
+                .map(s -> s.charAt(0))
+                .orElse('.');
     }
 
     protected abstract String getDisplayName();
 
     protected abstract Optional<String> getString(UUID uuid);
 
+    private String parseValue(String string) {
+        if (!isFormatted) {
+            return string;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        boolean decimalSeparatorFound = false;
+        for (char c : string.toCharArray()) {
+            if (Character.isDigit(c)) {
+                builder.append(c);
+            } else if (!decimalSeparatorFound && c == decimalSeparator) {
+                builder.append('.');
+                decimalSeparatorFound = true;
+            }
+        }
+        return builder.toString();
+    }
+
     @Override
     public CompletableFuture<Optional<Double>> getValue(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Optional<String> value = getString(uuid);
+                Optional<String> value = getString(uuid).filter(s -> !s.isEmpty()).map(this::parseValue);
                 if (!value.isPresent()) {
                     if (showErrors) {
                         plugin.getLogger().warning("The value of " + getDisplayName() + " is empty");

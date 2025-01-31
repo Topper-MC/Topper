@@ -120,6 +120,11 @@
         </dependency>
         <dependency>
             <groupId>me.hsgamer</groupId>
+            <artifactId>topper-query-holder</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
             <artifactId>topper-query-snapshot</artifactId>
             <version>${project.version}</version>
         </dependency>

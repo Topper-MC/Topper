@@ -1,8 +1,10 @@
 package me.hsgamer.topper.spigot.plugin.holder.display;
 
+import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
 import me.hsgamer.topper.spigot.plugin.holder.NumberTopHolder;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.text.DecimalFormat;
@@ -12,7 +14,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ValueDisplay {
+public class ValueDisplay implements SimpleQueryDisplay<UUID, Double> {
     private static final Pattern VALUE_PLACEHOLDER_PATTERN = Pattern.compile("\\{value(?:_(.*))?}");
 
     public final String line;
@@ -35,18 +37,18 @@ public class ValueDisplay {
                 .orElse("---");
     }
 
-    public String getDisplayUuid(@Nullable UUID uuid) {
+    public @NotNull String getDisplayKey(@Nullable UUID uuid) {
         return uuid != null ? uuid.toString() : displayNullUuid;
     }
 
-    public String getDisplayName(@Nullable UUID uuid) {
+    public @NotNull String getDisplayName(@Nullable UUID uuid) {
         return Optional.ofNullable(uuid)
                 .map(Bukkit::getOfflinePlayer)
                 .map(OfflinePlayer::getName)
                 .orElse(displayNullName);
     }
 
-    public String getDisplayValue(@Nullable Double value, @Nullable String formatType) {
+    public @NotNull String getDisplayValue(@Nullable Double value, @Nullable String formatType) {
         if (value == null) {
             return displayNullValue;
         }
@@ -71,7 +73,7 @@ public class ValueDisplay {
     public String getDisplayLine(int index /* 1-based */, @Nullable Map.Entry<UUID, Double> entry) {
         String line = this.line
                 .replace("{index}", String.valueOf(index))
-                .replace("{uuid}", getDisplayUuid(entry == null ? null : entry.getKey()))
+                .replace("{uuid}", getDisplayKey(entry == null ? null : entry.getKey()))
                 .replace("{name}", getDisplayName(entry == null ? null : entry.getKey()));
 
         Double value = entry == null ? null : entry.getValue();

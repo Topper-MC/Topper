@@ -118,15 +118,18 @@ public class ValueDisplay implements SimpleQueryDisplay<UUID, Double> {
             String pattern = Optional.ofNullable(settings.get("pattern")).orElse("HH:mm:ss");
             String type = Optional.ofNullable(settings.get("type")).orElse("duration");
             long time = value.longValue();
-            TimeUnit unit = Optional.ofNullable(settings.get("unit"))
-                    .map(s -> {
-                        try {
-                            return TimeUnit.valueOf(s.toUpperCase());
-                        } catch (IllegalArgumentException e) {
-                            return null;
-                        }
-                    })
-                    .orElse(TimeUnit.SECONDS);
+            String unitString = Optional.ofNullable(settings.get("unit")).orElse("seconds");
+            TimeUnit unit;
+            if (unitString.equalsIgnoreCase("ticks")) {
+                unit = TimeUnit.MILLISECONDS;
+                time *= 50;
+            } else {
+                try {
+                    unit = TimeUnit.valueOf(unitString.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    return "INVALID_UNIT";
+                }
+            }
             long millis = unit.toMillis(time);
 
             if (type.equalsIgnoreCase("time")) {

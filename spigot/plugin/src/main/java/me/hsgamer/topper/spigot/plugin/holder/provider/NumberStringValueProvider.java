@@ -2,8 +2,10 @@ package me.hsgamer.topper.spigot.plugin.holder.provider;
 
 import io.github.projectunified.minelib.scheduler.async.AsyncScheduler;
 import io.github.projectunified.minelib.scheduler.global.GlobalScheduler;
+import me.hsgamer.hscore.common.MapUtils;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,7 +17,7 @@ public abstract class NumberStringValueProvider implements ValueProvider {
     private final boolean isAsync;
     private final boolean showErrors;
     private final boolean isFormatted;
-    private final char decimalSeparator;
+    private final FormattedSettings formattedSettings;
 
     public NumberStringValueProvider(TopperPlugin plugin, Map<String, Object> map) {
         this.plugin = plugin;
@@ -34,40 +36,24 @@ public abstract class NumberStringValueProvider implements ValueProvider {
                 .map(String::toLowerCase)
                 .map(Boolean::parseBoolean)
                 .orElse(false);
-        decimalSeparator = Optional.ofNullable(map.get("decimal-separator"))
-                .map(Object::toString)
-                .filter(s -> !s.isEmpty())
-                .map(s -> s.charAt(0))
-                .orElse('.');
+        formattedSettings = new FormattedSettings(
+                Optional.ofNullable(map.get("formatted-settings"))
+                        .flatMap(MapUtils::castOptionalStringObjectMap)
+                        .orElseGet(Collections::emptyMap)
+        );
     }
 
     protected abstract String getDisplayName();
 
     protected abstract Optional<String> getString(UUID uuid);
 
-    private String parseValue(String string) {
-        if (!isFormatted) {
-            return string;
-        }
-
-        StringBuilder builder = new StringBuilder();
-        boolean decimalSeparatorFound = false;
-        for (char c : string.toCharArray()) {
-            if (Character.isDigit(c)) {
-                builder.append(c);
-            } else if (!decimalSeparatorFound && c == decimalSeparator) {
-                builder.append('.');
-                decimalSeparatorFound = true;
-            }
-        }
-        return builder.toString();
-    }
-
     @Override
     public CompletableFuture<Optional<Double>> getValue(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Optional<String> value = getString(uuid).filter(s -> !s.isEmpty()).map(this::parseValue);
+                Optional<String> value = getString(uuid)
+                        .filter(s -> !s.isEmpty())
+                        .map(s -> isFormatted ? formattedSettings.clearFormat(s) : s);
                 if (!value.isPresent()) {
                     if (showErrors) {
                         plugin.getLogger().warning("The value of " + getDisplayName() + " is empty");
@@ -82,5 +68,31 @@ public abstract class NumberStringValueProvider implements ValueProvider {
                 return Optional.empty();
             }
         }, (isAsync ? AsyncScheduler.get(plugin) : GlobalScheduler.get(plugin)).getExecutor());
+    }
+
+    private static final class FormattedSettings {
+        private final char decimalSeparator;
+
+        private FormattedSettings(Map<String, Object> map) {
+            decimalSeparator = Optional.ofNullable(map.get("decimal-separator"))
+                    .map(Object::toString)
+                    .filter(s -> !s.isEmpty())
+                    .map(s -> s.charAt(0))
+                    .orElse('.');
+        }
+
+        String clearFormat(String string) {
+            StringBuilder builder = new StringBuilder();
+            boolean decimalSeparatorFound = false;
+            for (char c : string.toCharArray()) {
+                if (Character.isDigit(c)) {
+                    builder.append(c);
+                } else if (!decimalSeparatorFound && c == decimalSeparator) {
+                    builder.append('.');
+                    decimalSeparatorFound = true;
+                }
+            }
+            return builder.toString();
+        }
     }
 }

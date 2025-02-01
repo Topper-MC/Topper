@@ -1,5 +1,6 @@
 package me.hsgamer.topper.spigot.plugin.holder.display;
 
+import me.hsgamer.hscore.common.Validate;
 import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
 import me.hsgamer.topper.spigot.plugin.holder.NumberTopHolder;
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -86,19 +87,28 @@ public class ValueDisplay implements SimpleQueryDisplay<UUID, Double> {
             Map<String, String> settings = getSettings(formatQuery.substring(FORMAT_QUERY_DECIMAL_FORMAT_PREFIX.length()));
 
             DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+            DecimalFormat decimalFormat = new DecimalFormat();
+            decimalFormat.setRoundingMode(RoundingMode.HALF_EVEN);
+
             Optional.ofNullable(settings.get("decimalSeparator"))
                     .map(s -> s.charAt(0))
                     .ifPresent(symbols::setDecimalSeparator);
             Optional.ofNullable(settings.get("groupingSeparator"))
                     .map(s -> s.charAt(0))
-                    .ifPresent(symbols::setGroupingSeparator);
-
-            DecimalFormat decimalFormat = new DecimalFormat();
-            decimalFormat.setDecimalFormatSymbols(symbols);
-            decimalFormat.setRoundingMode(RoundingMode.HALF_EVEN);
+                    .ifPresent(c -> {
+                        symbols.setGroupingSeparator(c);
+                        decimalFormat.setGroupingUsed(true);
+                    });
+            Optional.ofNullable(settings.get("groupingSize"))
+                    .flatMap(Validate::getNumber)
+                    .map(Number::intValue)
+                    .ifPresent(decimalFormat::setGroupingSize);
             Optional.ofNullable(settings.get("maximumFractionDigits"))
-                    .map(Integer::parseInt)
+                    .flatMap(Validate::getNumber)
+                    .map(Number::intValue)
                     .ifPresent(decimalFormat::setMaximumFractionDigits);
+
+            decimalFormat.setDecimalFormatSymbols(symbols);
             return decimalFormat.format(value);
         }
 

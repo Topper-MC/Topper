@@ -1,5 +1,8 @@
 package me.hsgamer.topper.agent.storage;
 
+import me.hsgamer.hscore.logger.common.LogLevel;
+import me.hsgamer.hscore.logger.common.Logger;
+import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.agent.core.Agent;
 import me.hsgamer.topper.agent.core.DataEntryAgent;
 import me.hsgamer.topper.core.DataEntry;
@@ -11,12 +14,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable {
-    private final Logger logger;
+    private static final Logger LOGGER = LoggerProvider.getLogger(StorageAgent.class);
+
     private final DataHolder<K, V> holder;
     private final DataStorage<K, V> storage;
     private final Queue<Map.Entry<K, V>> queue = new ConcurrentLinkedQueue<>(); // Value can be null representing removal
@@ -25,8 +27,7 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
     private final AtomicBoolean saving = new AtomicBoolean(false);
     private int maxEntryPerCall = 10;
 
-    public StorageAgent(Logger logger, DataHolder<K, V> holder, DataStorage<K, V> storage) {
-        this.logger = logger;
+    public StorageAgent(DataHolder<K, V> holder, DataStorage<K, V> storage) {
         this.holder = holder;
         this.storage = storage;
     }
@@ -82,7 +83,7 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
             modifier.commit();
             savingMap.set(null);
         } catch (Throwable t) {
-            logger.log(Level.SEVERE, "Failed to save entries for " + holder.getName(), t);
+            LOGGER.log(LogLevel.ERROR, "Failed to save entries for " + holder.getName(), t);
             modifier.rollback();
         } finally {
             saving.set(false);
@@ -95,7 +96,7 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
         try {
             storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Failed to load top entries for " + holder.getName(), e);
+            LOGGER.log(LogLevel.ERROR, "Failed to load top entries for " + holder.getName(), e);
         }
     }
 

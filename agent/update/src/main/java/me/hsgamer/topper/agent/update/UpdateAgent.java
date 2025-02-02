@@ -1,5 +1,8 @@
 package me.hsgamer.topper.agent.update;
 
+import me.hsgamer.hscore.logger.common.LogLevel;
+import me.hsgamer.hscore.logger.common.Logger;
+import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.agent.core.DataEntryAgent;
 import me.hsgamer.topper.core.DataEntry;
 import me.hsgamer.topper.core.DataHolder;
@@ -12,19 +15,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class UpdateAgent<K, V> implements DataEntryAgent<K, V>, Runnable {
-    private final Logger logger;
+    private static final Logger LOGGER = LoggerProvider.getLogger(UpdateAgent.class);
+
     private final Queue<K> updateQueue = new ConcurrentLinkedQueue<>();
     private final DataHolder<K, V> holder;
     private final Function<K, CompletableFuture<Optional<V>>> updateFunction;
     private final List<Predicate<K>> filters = new ArrayList<>();
     private int maxEntryPerCall = 10;
 
-    public UpdateAgent(Logger logger, DataHolder<K, V> holder, Function<K, CompletableFuture<Optional<V>>> updateFunction) {
-        this.logger = logger;
+    public UpdateAgent(DataHolder<K, V> holder, Function<K, CompletableFuture<Optional<V>>> updateFunction) {
         this.holder = holder;
         this.updateFunction = updateFunction;
     }
@@ -55,7 +56,7 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V>, Runnable {
             )
                     .whenComplete((v, throwable) -> {
                         if (throwable != null) {
-                            logger.log(Level.WARNING, "An error occurred while updating the entry: " + k, throwable);
+                            LOGGER.log(LogLevel.ERROR, "An error occurred while updating the entry: " + k, throwable);
                         }
                         updateQueue.add(k);
                     });

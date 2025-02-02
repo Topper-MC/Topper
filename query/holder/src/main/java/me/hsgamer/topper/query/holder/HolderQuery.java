@@ -6,30 +6,31 @@ import me.hsgamer.topper.query.simple.SimpleQuery;
 import me.hsgamer.topper.query.simple.SimpleQueryContext;
 import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
 public abstract class HolderQuery<K, V, H extends DataHolder<K, V>, A> extends SimpleQuery<A, HolderQuery.Context<K, V, H>> {
     protected HolderQuery() {
         registerActorAction("key", (actor, context) -> {
-            K key = getKey(actor, context);
+            K key = getKey(actor, context).orElse(null);
             return getDisplay(context.holder).getDisplayKey(key);
         });
         registerActorAction("name", (actor, context) -> {
-            K key = getKey(actor, context);
+            K key = getKey(actor, context).orElse(null);
             return getDisplay(context.holder).getDisplayName(key);
         });
         registerActorAction("value", (actor, context) -> {
-            K key = getKey(actor, context);
-            if (key == null) return null;
-            V value = context.holder.getEntry(key).map(DataEntry::getValue).orElse(null);
+            V value = getKey(actor, context)
+                    .flatMap(context.holder::getEntry)
+                    .map(DataEntry::getValue)
+                    .orElse(null);
             return getDisplay(context.holder).getDisplayValue(value, context.parent.args);
         });
         registerActorAction("value_raw", (actor, context) -> {
-            K key = getKey(actor, context);
-            if (key == null) return null;
-            V value = context.holder.getEntry(key).map(DataEntry::getValue).orElse(null);
+            V value = getKey(actor, context)
+                    .flatMap(context.holder::getEntry)
+                    .map(DataEntry::getValue)
+                    .orElse(null);
             return getDisplay(context.holder).getDisplayValue(value, "raw");
         });
     }
@@ -43,8 +44,7 @@ public abstract class HolderQuery<K, V, H extends DataHolder<K, V>, A> extends S
         return false;
     }
 
-    @Nullable
-    protected abstract K getKey(@NotNull A actor, @NotNull Context<K, V, H> context);
+    protected abstract Optional<K> getKey(@NotNull A actor, @NotNull Context<K, V, H> context);
 
     @Override
     protected Optional<Context<K, V, H>> getContext(@NotNull String query) {

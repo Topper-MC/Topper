@@ -55,10 +55,12 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
             V value = context.agent.getSnapshotByIndex(i - 1).map(Map.Entry::getValue).orElse(null);
             return context.display.getDisplayValue(value, "raw");
         });
-        registerActorAction("top_rank", (actor, context) -> {
-            int index = context.agent.getSnapshotIndex(getKey(actor, context));
-            return Integer.toString(index + 1);
-        });
+        registerActorAction("top_rank", (actor, context) ->
+                getKey(actor, context)
+                        .map(context.agent::getSnapshotIndex)
+                        .map(index -> index + 1)
+                        .map(Object::toString)
+                        .orElse("0"));
     }
 
     protected abstract Optional<SnapshotAgent<K, V>> getAgent(@NotNull String name);
@@ -69,7 +71,7 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
         return false;
     }
 
-    protected abstract K getKey(@NotNull A actor, @NotNull Context<K, V> context);
+    protected abstract Optional<K> getKey(@NotNull A actor, @NotNull Context<K, V> context);
 
     @Override
     protected Optional<Context<K, V>> getContext(@NotNull String query) {

@@ -27,8 +27,8 @@ public class TopQueryManager extends QueryManager<OfflinePlayer> {
             }
 
             @Override
-            protected @NotNull UUID getKey(@NotNull OfflinePlayer actor, @NotNull Context<UUID, Double, NumberTopHolder> context) {
-                return actor.getUniqueId();
+            protected Optional<UUID> getKey(@NotNull OfflinePlayer actor, @NotNull Context<UUID, Double, NumberTopHolder> context) {
+                return Optional.of(actor.getUniqueId());
             }
         });
         addQuery(new SnapshotQuery<UUID, Double, OfflinePlayer>() {
@@ -43,8 +43,8 @@ public class TopQueryManager extends QueryManager<OfflinePlayer> {
             }
 
             @Override
-            protected UUID getKey(@NotNull OfflinePlayer actor, @NotNull Context<UUID, Double> context) {
-                return actor.getUniqueId();
+            protected Optional<UUID> getKey(@NotNull OfflinePlayer actor, @NotNull Context<UUID, Double> context) {
+                return Optional.of(actor.getUniqueId());
             }
         });
     }

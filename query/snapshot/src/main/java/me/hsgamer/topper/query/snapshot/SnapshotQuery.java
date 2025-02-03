@@ -61,6 +61,8 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
                         .map(index -> index + 1)
                         .map(Object::toString)
                         .orElse("0"));
+        registerAction("top_size", (actor, context) ->
+                Integer.toString(context.agent.getSnapshot().size()));
     }
 
     protected abstract Optional<SnapshotAgent<K, V>> getAgent(@NotNull String name);

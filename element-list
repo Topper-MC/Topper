@@ -6,6 +6,8 @@ me.hsgamer.topper.agent.storage
 me.hsgamer.topper.agent.update
 me.hsgamer.topper.core
 me.hsgamer.topper.query.core
+me.hsgamer.topper.query.holder
+me.hsgamer.topper.query.simple
 me.hsgamer.topper.query.snapshot
 me.hsgamer.topper.spigot.agent.runnable
 me.hsgamer.topper.spigot.plugin
@@ -18,13 +20,14 @@ me.hsgamer.topper.spigot.plugin.holder
 me.hsgamer.topper.spigot.plugin.holder.display
 me.hsgamer.topper.spigot.plugin.holder.provider
 me.hsgamer.topper.spigot.plugin.hook
-me.hsgamer.topper.spigot.plugin.hook.papi
+me.hsgamer.topper.spigot.plugin.hook.placeholderapi
 me.hsgamer.topper.spigot.plugin.listener
 me.hsgamer.topper.spigot.plugin.manager
 me.hsgamer.topper.spigot.storage.simple
 me.hsgamer.topper.spigot.storage.simple.supplier
 me.hsgamer.topper.storage.core
 me.hsgamer.topper.storage.simple.builder
+me.hsgamer.topper.storage.simple.config
 me.hsgamer.topper.storage.simple.converter
 me.hsgamer.topper.storage.simple.setting
 me.hsgamer.topper.storage.simple.supplier

@@ -29,21 +29,18 @@ class PlaceholderValueProvider extends NumberStringValueProvider {
     }
 
     @Override
-    protected Optional<String> getString(UUID uuid) {
+    protected ValueState getString(UUID uuid) {
         OfflinePlayer player;
         if (isOnlineOnly) {
             player = plugin.getServer().getPlayer(uuid);
             if (player == null) {
-                return Optional.empty();
+                return ValueState.unhandled();
             }
         } else {
             player = plugin.getServer().getOfflinePlayer(uuid);
         }
 
         String parsed = PlaceholderAPI.setPlaceholders(player, placeholder).trim();
-        if (parsed.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(parsed);
+        return ValueState.handled(parsed.isEmpty() ? null : parsed);
     }
 }

@@ -4,6 +4,7 @@ import io.github.projectunified.minelib.scheduler.async.AsyncScheduler;
 import io.github.projectunified.minelib.scheduler.global.GlobalScheduler;
 import me.hsgamer.hscore.common.MapUtils;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Map;
@@ -45,13 +46,18 @@ public abstract class NumberStringValueProvider implements ValueProvider {
 
     protected abstract String getDisplayName();
 
-    protected abstract Optional<String> getString(UUID uuid);
+    protected abstract ValueState getString(UUID uuid);
 
     @Override
     public CompletableFuture<Optional<Double>> getValue(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Optional<String> value = getString(uuid)
+                ValueState valueState = getString(uuid);
+                if (!valueState.handled) {
+                    return Optional.empty();
+                }
+
+                Optional<String> value = Optional.ofNullable(valueState.value)
                         .filter(s -> !s.isEmpty())
                         .map(s -> isFormatted ? formattedSettings.clearFormat(s) : s);
                 if (!value.isPresent()) {
@@ -60,6 +66,7 @@ public abstract class NumberStringValueProvider implements ValueProvider {
                     }
                     return Optional.empty();
                 }
+
                 return Optional.of(Double.parseDouble(value.get()));
             } catch (Exception e) {
                 if (showErrors) {
@@ -93,6 +100,24 @@ public abstract class NumberStringValueProvider implements ValueProvider {
                 }
             }
             return builder.toString();
+        }
+    }
+
+    public static class ValueState {
+        public final boolean handled;
+        public final @Nullable String value;
+
+        private ValueState(boolean handled, @Nullable String value) {
+            this.handled = handled;
+            this.value = value;
+        }
+
+        public static ValueState handled(@Nullable String value) {
+            return new ValueState(true, value);
+        }
+
+        public static ValueState unhandled() {
+            return new ValueState(false, null);
         }
     }
 }

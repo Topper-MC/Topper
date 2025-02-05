@@ -15,6 +15,7 @@
         <module>agent-runnable</module>
         <module>storage-simple</module>
         <module>plugin</module>
+        <module>value</module>
     </modules>
 
     <repositories>

@@ -5,11 +5,16 @@ import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 import me.hsgamer.topper.spigot.plugin.builder.ValueProviderBuilder;
 import me.hsgamer.topper.spigot.plugin.manager.QueryForwardManager;
+import me.hsgamer.topper.spigot.value.placeholderapi.PlaceholderValueProvider;
+import me.hsgamer.topper.spigot.value.player.PlayerValueProvider;
+import me.hsgamer.topper.value.core.ValueProvider;
+import me.hsgamer.topper.value.delegate.DelegateValueProvider;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class PlaceholderAPIHook implements Loadable {
     private final TopperPlugin plugin;
@@ -21,7 +26,17 @@ public class PlaceholderAPIHook implements Loadable {
 
     @Override
     public void load() {
-        plugin.get(ValueProviderBuilder.class).register(map -> new PlaceholderValueProvider(plugin, map), "placeholderapi", "placeholder", "papi");
+        plugin.get(ValueProviderBuilder.class).register(map -> {
+            String placeholder = Optional.ofNullable(map.get("placeholder")).map(Object::toString).orElse("");
+            boolean isOnlineOnly = Optional.ofNullable(map.get("online"))
+                    .map(Object::toString)
+                    .map(String::toLowerCase)
+                    .map(Boolean::parseBoolean)
+                    .orElse(false);
+            PlaceholderValueProvider provider = new PlaceholderValueProvider(placeholder, isOnlineOnly);
+            ValueProvider<OfflinePlayer, Double> doubleValueProvider = DelegateValueProvider.create(provider, Double::parseDouble, provider.getPlaceholder());
+            return PlayerValueProvider.uuidToOfflinePlayer(doubleValueProvider);
+        }, "placeholderapi", "placeholder", "papi");
         plugin.get(QueryForwardManager.class).addQueryForwarder(context -> {
             PlaceholderExpansion expansion = new PlaceholderExpansion() {
                 @Override

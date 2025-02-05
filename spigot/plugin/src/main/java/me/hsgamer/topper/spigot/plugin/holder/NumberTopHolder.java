@@ -16,16 +16,18 @@ import me.hsgamer.topper.spigot.plugin.builder.ValueProviderBuilder;
 import me.hsgamer.topper.spigot.plugin.config.MainConfig;
 import me.hsgamer.topper.spigot.plugin.event.GenericEntryUpdateEvent;
 import me.hsgamer.topper.spigot.plugin.holder.display.ValueDisplay;
-import me.hsgamer.topper.spigot.plugin.holder.provider.ValueProvider;
 import me.hsgamer.topper.spigot.plugin.manager.TopManager;
+import me.hsgamer.topper.value.core.ValueProvider;
+import me.hsgamer.topper.value.core.ValueWrapper;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
 
 public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
-    private final ValueProvider valueProvider;
     private final ValueDisplay valueDisplay;
     private final StorageAgent<UUID, Double> storageAgent;
     private final UpdateAgent<UUID, Double> updateAgent;
@@ -33,10 +35,6 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
 
     public NumberTopHolder(TopperPlugin instance, String name, Map<String, Object> map) {
         super(name);
-        this.valueProvider = instance.get(ValueProviderBuilder.class).build(map).orElseGet(() -> {
-            instance.getLogger().warning("No value provider found for " + name);
-            return ValueProvider.EMPTY;
-        });
         this.valueDisplay = new ValueDisplay(map);
 
         this.storageAgent = new StorageAgent<>(this, instance.get(TopManager.class).buildStorage(name));
@@ -45,7 +43,33 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
         addEntryAgent(storageAgent);
         addAgent(new SpigotRunnableAgent(storageAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskSaveDelay()));
 
-        this.updateAgent = new UpdateAgent<>(this, valueProvider::getValue);
+        ValueProvider<UUID, Double> valueProvider = instance.get(ValueProviderBuilder.class).build(map).orElseGet(() -> {
+            instance.getLogger().warning("No value provider found for " + name);
+            return ValueProvider.empty();
+        });
+        boolean isAsync = Optional.ofNullable(map.get("async"))
+                .map(Object::toString)
+                .map(String::toLowerCase)
+                .map(Boolean::parseBoolean)
+                .orElse(false);
+        boolean showErrors = Optional.ofNullable(map.get("show-errors"))
+                .map(Object::toString)
+                .map(String::toLowerCase)
+                .map(Boolean::parseBoolean)
+                .orElse(false);
+        this.updateAgent = new UpdateAgent<>(this, uuid -> CompletableFuture.supplyAsync(() -> {
+            ValueWrapper<Double> wrapper = valueProvider.apply(uuid);
+            if (wrapper.state == ValueWrapper.State.NOT_HANDLED) {
+                return Optional.empty();
+            } else if (wrapper.state == ValueWrapper.State.ERROR) {
+                if (showErrors) {
+                    instance.getLogger().log(Level.WARNING, "Error on getting value for " + name + " from " + uuid + " - " + wrapper.errorMessage, wrapper.errorMessage);
+                }
+                return Optional.empty();
+            } else {
+                return Optional.ofNullable(wrapper.value);
+            }
+        }, (isAsync ? AsyncScheduler.get(instance) : GlobalScheduler.get(instance)).getExecutor()));
         updateAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskUpdateEntryPerTick());
         addEntryAgent(updateAgent);
         addAgent(new SpigotRunnableAgent(updateAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
@@ -85,7 +109,7 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
 
     @Override
     public Double getDefaultValue() {
-        return valueProvider.getDefaultValue();
+        return 0D;
     }
 
     public StorageAgent<UUID, Double> getStorageAgent() {

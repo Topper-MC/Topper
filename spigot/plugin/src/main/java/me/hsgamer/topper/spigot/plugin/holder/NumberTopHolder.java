@@ -18,7 +18,6 @@ import me.hsgamer.topper.spigot.plugin.event.GenericEntryUpdateEvent;
 import me.hsgamer.topper.spigot.plugin.holder.display.ValueDisplay;
 import me.hsgamer.topper.spigot.plugin.manager.TopManager;
 import me.hsgamer.topper.value.core.ValueProvider;
-import me.hsgamer.topper.value.core.ValueWrapper;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -57,19 +56,12 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
                 .map(String::toLowerCase)
                 .map(Boolean::parseBoolean)
                 .orElse(false);
-        this.updateAgent = new UpdateAgent<>(this, uuid -> CompletableFuture.supplyAsync(() -> {
-            ValueWrapper<Double> wrapper = valueProvider.apply(uuid);
-            switch (wrapper.state) {
-                case HANDLED:
-                    return Optional.ofNullable(wrapper.value);
-                case ERROR:
+        this.updateAgent = new UpdateAgent<>(this, uuid -> CompletableFuture.supplyAsync(() ->
+                valueProvider.apply(uuid).asOptional((errorMessage, throwable) -> {
                     if (showErrors) {
-                        instance.getLogger().log(Level.WARNING, "Error on getting value for " + name + " from " + uuid + " - " + wrapper.errorMessage, wrapper.throwable);
+                        instance.getLogger().log(Level.WARNING, "Error on getting value for " + name + " from " + uuid + " - " + errorMessage, throwable);
                     }
-                default:
-                    return Optional.empty();
-            }
-        }, (isAsync ? AsyncScheduler.get(instance) : GlobalScheduler.get(instance)).getExecutor()));
+                }), (isAsync ? AsyncScheduler.get(instance) : GlobalScheduler.get(instance)).getExecutor()));
         updateAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskUpdateEntryPerTick());
         addEntryAgent(updateAgent);
         addAgent(new SpigotRunnableAgent(updateAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));

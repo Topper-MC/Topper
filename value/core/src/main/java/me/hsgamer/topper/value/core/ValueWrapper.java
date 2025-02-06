@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 public final class ValueWrapper<T> {
     public final @NotNull State state;
@@ -48,6 +49,21 @@ public final class ValueWrapper<T> {
 
     public boolean isNull() {
         return value == null;
+    }
+
+    public Optional<T> asOptional() {
+        return Optional.ofNullable(value);
+    }
+
+    public Optional<T> asOptional(BiConsumer<@NotNull String, @Nullable Throwable> errorConsumer) {
+        switch (state) {
+            case HANDLED:
+                return Optional.ofNullable(value);
+            case ERROR:
+                errorConsumer.accept(errorMessage, throwable);
+            default:
+                return Optional.empty();
+        }
     }
 
     public enum State {

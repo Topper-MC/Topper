@@ -59,15 +59,15 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
                 .orElse(false);
         this.updateAgent = new UpdateAgent<>(this, uuid -> CompletableFuture.supplyAsync(() -> {
             ValueWrapper<Double> wrapper = valueProvider.apply(uuid);
-            if (wrapper.state == ValueWrapper.State.NOT_HANDLED) {
-                return Optional.empty();
-            } else if (wrapper.state == ValueWrapper.State.ERROR) {
-                if (showErrors) {
-                    instance.getLogger().log(Level.WARNING, "Error on getting value for " + name + " from " + uuid + " - " + wrapper.errorMessage, wrapper.throwable);
-                }
-                return Optional.empty();
-            } else {
-                return Optional.ofNullable(wrapper.value);
+            switch (wrapper.state) {
+                case HANDLED:
+                    return Optional.ofNullable(wrapper.value);
+                case ERROR:
+                    if (showErrors) {
+                        instance.getLogger().log(Level.WARNING, "Error on getting value for " + name + " from " + uuid + " - " + wrapper.errorMessage, wrapper.throwable);
+                    }
+                default:
+                    return Optional.empty();
             }
         }, (isAsync ? AsyncScheduler.get(instance) : GlobalScheduler.get(instance)).getExecutor()));
         updateAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskUpdateEntryPerTick());

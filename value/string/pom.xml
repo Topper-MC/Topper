@@ -5,14 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>me.hsgamer</groupId>
-        <artifactId>topper</artifactId>
+        <artifactId>topper-value</artifactId>
         <version>3.6.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>topper-value</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>core</module>
-        <module>string</module>
-    </modules>
+    <artifactId>topper-value-string</artifactId>
 </project>

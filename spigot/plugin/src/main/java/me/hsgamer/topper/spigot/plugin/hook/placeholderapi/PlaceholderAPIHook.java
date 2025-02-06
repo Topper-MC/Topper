@@ -6,6 +6,7 @@ import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 import me.hsgamer.topper.spigot.plugin.builder.ValueProviderBuilder;
 import me.hsgamer.topper.spigot.plugin.manager.QueryForwardManager;
 import me.hsgamer.topper.spigot.value.placeholderapi.PlaceholderValueProvider;
+import me.hsgamer.topper.value.string.NumberStringDeformatter;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
@@ -32,6 +33,7 @@ public class PlaceholderAPIHook implements Loadable {
                     .map(Boolean::parseBoolean)
                     .orElse(false);
             return new PlaceholderValueProvider(placeholder, isOnlineOnly)
+                    .thenApply(NumberStringDeformatter.deformatterOrIdentity(map))
                     .thenApply(Double::parseDouble)
                     .keyMapper(Bukkit::getOfflinePlayer);
         }, "placeholderapi", "placeholder", "papi");

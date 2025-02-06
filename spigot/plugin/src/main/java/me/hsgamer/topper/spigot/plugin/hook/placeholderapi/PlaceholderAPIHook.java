@@ -6,9 +6,7 @@ import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 import me.hsgamer.topper.spigot.plugin.builder.ValueProviderBuilder;
 import me.hsgamer.topper.spigot.plugin.manager.QueryForwardManager;
 import me.hsgamer.topper.spigot.value.placeholderapi.PlaceholderValueProvider;
-import me.hsgamer.topper.spigot.value.player.PlayerValueProvider;
-import me.hsgamer.topper.value.core.ValueProvider;
-import me.hsgamer.topper.value.delegate.DelegateValueProvider;
+import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,9 +31,9 @@ public class PlaceholderAPIHook implements Loadable {
                     .map(String::toLowerCase)
                     .map(Boolean::parseBoolean)
                     .orElse(false);
-            PlaceholderValueProvider provider = new PlaceholderValueProvider(placeholder, isOnlineOnly);
-            ValueProvider<OfflinePlayer, Double> doubleValueProvider = DelegateValueProvider.create(provider, Double::parseDouble, provider.getPlaceholder());
-            return PlayerValueProvider.uuidToOfflinePlayer(doubleValueProvider);
+            return new PlaceholderValueProvider(placeholder, isOnlineOnly)
+                    .thenApply(Double::parseDouble)
+                    .keyMapper(Bukkit::getOfflinePlayer);
         }, "placeholderapi", "placeholder", "papi");
         plugin.get(QueryForwardManager.class).addQueryForwarder(context -> {
             PlaceholderExpansion expansion = new PlaceholderExpansion() {

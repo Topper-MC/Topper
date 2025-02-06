@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.Statistic;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.Objects;
@@ -53,7 +54,7 @@ public class StatisticValueProvider implements ValueProvider<Player, Integer> {
     }
 
     @Override
-    public ValueWrapper<Integer> apply(Player player) {
+    public @NotNull ValueWrapper<Integer> apply(@NotNull Player player) {
         if (statistic == null) {
             return ValueWrapper.error("Statistic is not set");
         }

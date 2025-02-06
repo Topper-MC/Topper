@@ -63,7 +63,7 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
                 return Optional.empty();
             } else if (wrapper.state == ValueWrapper.State.ERROR) {
                 if (showErrors) {
-                    instance.getLogger().log(Level.WARNING, "Error on getting value for " + name + " from " + uuid + " - " + wrapper.errorMessage, wrapper.errorMessage);
+                    instance.getLogger().log(Level.WARNING, "Error on getting value for " + name + " from " + uuid + " - " + wrapper.errorMessage, wrapper.throwable);
                 }
                 return Optional.empty();
             } else {

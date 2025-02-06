@@ -13,7 +13,5 @@
     <packaging>pom</packaging>
     <modules>
         <module>core</module>
-        <module>delegate</module>
-        <module>number</module>
     </modules>
 </project>

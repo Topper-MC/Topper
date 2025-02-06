@@ -4,6 +4,7 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import me.hsgamer.topper.value.core.ValueProvider;
 import me.hsgamer.topper.value.core.ValueWrapper;
 import org.bukkit.OfflinePlayer;
+import org.jetbrains.annotations.NotNull;
 
 public class PlaceholderValueProvider implements ValueProvider<OfflinePlayer, String> {
     private final String placeholder;
@@ -14,12 +15,8 @@ public class PlaceholderValueProvider implements ValueProvider<OfflinePlayer, St
         this.isOnlineOnly = isOnlineOnly;
     }
 
-    public String getPlaceholder() {
-        return placeholder;
-    }
-
     @Override
-    public ValueWrapper<String> apply(OfflinePlayer player) {
+    public @NotNull ValueWrapper<String> apply(@NotNull OfflinePlayer player) {
         if (isOnlineOnly && !player.isOnline()) {
             return ValueWrapper.notHandled();
         }

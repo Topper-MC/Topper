@@ -14,7 +14,6 @@
     <modules>
         <module>statistic</module>
         <module>placeholderapi</module>
-        <module>player</module>
     </modules>
 
     <dependencies>

@@ -5,28 +5,22 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>me.hsgamer</groupId>
-        <artifactId>topper-storage</artifactId>
+        <artifactId>topper-storage-simple</artifactId>
         <version>3.7.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>topper-storage-simple</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>core</module>
-        <module>flat</module>
-        <module>converter</module>
-        <module>sql</module>
-        <module>mysql</module>
-        <module>sqlite</module>
-        <module>builder</module>
-        <module>sql-config</module>
-    </modules>
+    <artifactId>topper-storage-simple-flat</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>me.hsgamer</groupId>
-            <artifactId>topper-storage-core</artifactId>
+            <artifactId>topper-storage-simple-core</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
+            <artifactId>hscore-logger-provider</artifactId>
+            <version>${core.version}</version>
         </dependency>
     </dependencies>
 </project>

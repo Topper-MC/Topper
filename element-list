@@ -30,7 +30,11 @@ me.hsgamer.topper.storage.core
 me.hsgamer.topper.storage.simple.builder
 me.hsgamer.topper.storage.simple.config
 me.hsgamer.topper.storage.simple.converter
+me.hsgamer.topper.storage.simple.flat
+me.hsgamer.topper.storage.simple.mysql
 me.hsgamer.topper.storage.simple.setting
+me.hsgamer.topper.storage.simple.sql
+me.hsgamer.topper.storage.simple.sqlite
 me.hsgamer.topper.storage.simple.supplier
 me.hsgamer.topper.value.core
 me.hsgamer.topper.value.string

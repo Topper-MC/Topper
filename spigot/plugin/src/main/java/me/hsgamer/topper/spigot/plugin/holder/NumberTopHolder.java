@@ -74,8 +74,8 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
         }
 
         this.snapshotAgent = SnapshotAgent.create(this);
-        boolean reverseOrder = Optional.ofNullable(map.get("reverse")).map(String::valueOf).map(Boolean::parseBoolean).orElse(true);
-        snapshotAgent.setComparator(reverseOrder ? Comparator.reverseOrder() : Comparator.naturalOrder());
+        boolean reverseOrder = Optional.ofNullable(map.get("reverse")).map(String::valueOf).map(Boolean::parseBoolean).orElse(false);
+        snapshotAgent.setComparator(reverseOrder ? Comparator.naturalOrder() : Comparator.reverseOrder());
         addAgent(snapshotAgent);
         addAgent(new SpigotRunnableAgent(snapshotAgent, AsyncScheduler.get(instance), 20L));
 

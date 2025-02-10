@@ -7,7 +7,7 @@ public interface DataEntryAgent<K, V> {
         // EMPTY
     }
 
-    default void onUpdate(DataEntry<K, V> entry, V oldValue) {
+    default void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
         // EMPTY
     }
 

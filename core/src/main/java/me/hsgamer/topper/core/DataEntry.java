@@ -1,17 +1,18 @@
 package me.hsgamer.topper.core;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
 public final class DataEntry<K, V> {
     private final K key;
     private final DataHolder<K, V> holder;
-    private volatile V value;
+    private final AtomicReference<V> value;
 
     public DataEntry(K key, DataHolder<K, V> holder) {
         this.key = key;
         this.holder = holder;
-        this.value = holder.getDefaultValue();
+        this.value = new AtomicReference<>(holder.getDefaultValue());
     }
 
     public K getKey() {
@@ -19,7 +20,7 @@ public final class DataEntry<K, V> {
     }
 
     public V getValue() {
-        return value;
+        return value.get();
     }
 
     public void setValue(V value) {
@@ -31,14 +32,17 @@ public final class DataEntry<K, V> {
     }
 
     public void setValue(V value, boolean notify) {
-        if (Objects.equals(this.value, value)) return;
-        V oldValue = this.value;
-        this.value = value;
-        if (notify) holder.onUpdate(this, oldValue);
+        setValue(v -> value, notify);
     }
 
     public void setValue(UnaryOperator<V> operator, boolean notify) {
-        setValue(operator.apply(value), notify);
+        this.value.updateAndGet(oldValue -> {
+            V newValue = operator.apply(oldValue);
+            if (notify && !Objects.equals(oldValue, newValue)) {
+                holder.onUpdate(this, oldValue, newValue);
+            }
+            return newValue;
+        });
     }
 
     public DataHolder<K, V> getHolder() {

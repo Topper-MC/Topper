@@ -39,8 +39,8 @@ public class AgentDataHolder<K, V> extends DataHolder<K, V> {
     }
 
     @Override
-    protected void onUpdate(DataEntry<K, V> entry, V oldValue) {
-        entryAgentList.forEach(agent -> agent.onUpdate(entry, oldValue));
+    protected void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
+        entryAgentList.forEach(agent -> agent.onUpdate(entry, oldValue, newValue));
     }
 
     @Override

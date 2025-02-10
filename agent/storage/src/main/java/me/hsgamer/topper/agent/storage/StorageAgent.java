@@ -111,8 +111,8 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
     }
 
     @Override
-    public void onUpdate(DataEntry<K, V> entry, V oldValue) {
-        storeMap.get().put(entry.getKey(), entry.getValue());
+    public void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
+        storeMap.get().put(entry.getKey(), newValue);
     }
 
     @Override

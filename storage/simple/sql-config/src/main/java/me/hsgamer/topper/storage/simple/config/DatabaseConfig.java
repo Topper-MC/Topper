@@ -5,6 +5,7 @@ import me.hsgamer.hscore.config.PathString;
 import me.hsgamer.topper.storage.simple.setting.DatabaseSetting;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,9 +28,9 @@ public class DatabaseConfig implements DatabaseSetting {
             config.setComment(Collections.singletonList("The password to connect to the database"), "password");
             config.setIfAbsent(false, "use-ssl");
             config.setComment(Collections.singletonList("Whether to use SSL or not"), "use-ssl");
-            config.setIfAbsent(Collections.emptyMap(), "driver-properties");
+            config.setIfAbsent(new HashMap<>(), "driver-properties");
             config.setComment(Collections.singletonList("The driver properties"), "driver-properties");
-            config.setIfAbsent(Collections.emptyMap(), "client-properties");
+            config.setIfAbsent(new HashMap<>(), "client-properties");
             config.setComment(Collections.singletonList("The client properties"), "client-properties");
             config.save();
         }

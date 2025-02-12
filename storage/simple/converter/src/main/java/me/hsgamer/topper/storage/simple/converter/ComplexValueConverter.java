@@ -51,7 +51,7 @@ public final class ComplexValueConverter<T> implements ValueConverter<T> {
 
     @Override
     public @Nullable T fromRawString(@NotNull String value) {
-        String[] values = value.split(Pattern.quote(stringSeparator));
+        String[] values = value.split(Pattern.quote(stringSeparator), -1);
         if (values.length != entries.size()) {
             return null;
         }

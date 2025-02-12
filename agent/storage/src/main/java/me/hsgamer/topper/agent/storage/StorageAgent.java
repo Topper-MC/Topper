@@ -8,6 +8,7 @@ import me.hsgamer.topper.agent.core.DataEntryAgent;
 import me.hsgamer.topper.core.DataEntry;
 import me.hsgamer.topper.core.DataHolder;
 import me.hsgamer.topper.storage.core.DataStorage;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,9 +22,9 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
 
     private final DataHolder<K, V> holder;
     private final DataStorage<K, V> storage;
-    private final Queue<Map.Entry<K, V>> queue = new ConcurrentLinkedQueue<>(); // Value can be null representing removal
-    private final AtomicReference<Map<K, V>> storeMap = new AtomicReference<>(new ConcurrentHashMap<>());
-    private final AtomicReference<Map<K, V>> savingMap = new AtomicReference<>();
+    private final Queue<Map.Entry<K, ValueWrapper<V>>> queue = new ConcurrentLinkedQueue<>(); // Value can be null representing removal
+    private final AtomicReference<Map<K, ValueWrapper<V>>> storeMap = new AtomicReference<>(new ConcurrentHashMap<>());
+    private final AtomicReference<Map<K, ValueWrapper<V>>> savingMap = new AtomicReference<>();
     private final AtomicBoolean saving = new AtomicBoolean(false);
     private int maxEntryPerCall = 10;
 
@@ -39,14 +40,16 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
         storeMap.getAndSet(new ConcurrentHashMap<>())
                 .forEach((key, value) -> queue.add(new AbstractMap.SimpleEntry<>(key, value)));
 
-        Map<K, V> map = savingMap.updateAndGet(old -> old == null ? new HashMap<>() : old);
+        Map<K, ValueWrapper<V>> map = savingMap.updateAndGet(old -> old == null ? new HashMap<>() : old);
 
-        for (int i = 0; i < (urgent || maxEntryPerCall <= 0 ? Integer.MAX_VALUE : maxEntryPerCall); i++) {
-            Map.Entry<K, V> entry = queue.poll();
+        int entryIndex = 0;
+        while (urgent || maxEntryPerCall <= 0 || entryIndex < maxEntryPerCall) {
+            Map.Entry<K, ValueWrapper<V>> entry = queue.poll();
             if (entry == null) {
                 break;
             }
             map.put(entry.getKey(), entry.getValue());
+            entryIndex++;
         }
 
         if (map.isEmpty()) {
@@ -59,13 +62,13 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
         Map<K, V> finalMap = map.entrySet()
                 .stream()
                 .filter(entry -> {
-                    if (entry.getValue() == null) {
+                    if (entry.getValue().value == null) {
                         removeKeys.add(entry.getKey());
                         return false;
                     }
                     return true;
                 })
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().value));
 
 
         Optional<DataStorage.Modifier<K, V>> optionalModifier = storage.modify();
@@ -112,12 +115,12 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
 
     @Override
     public void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
-        storeMap.get().put(entry.getKey(), newValue);
+        storeMap.get().put(entry.getKey(), new ValueWrapper<>(newValue));
     }
 
     @Override
     public void onRemove(DataEntry<K, V> entry) {
-        storeMap.get().put(entry.getKey(), null);
+        storeMap.get().put(entry.getKey(), new ValueWrapper<>(null));
     }
 
     @Override
@@ -131,5 +134,13 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
 
     public void setMaxEntryPerCall(int taskSaveEntryPerTick) {
         this.maxEntryPerCall = taskSaveEntryPerTick;
+    }
+
+    private static final class ValueWrapper<V> {
+        private final @Nullable V value;
+
+        private ValueWrapper(@Nullable V value) {
+            this.value = value;
+        }
     }
 }

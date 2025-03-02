@@ -13,6 +13,7 @@ import me.hsgamer.topper.spigot.plugin.config.MainConfig;
 import me.hsgamer.topper.spigot.plugin.config.MessageConfig;
 import me.hsgamer.topper.spigot.plugin.hook.HookSystem;
 import me.hsgamer.topper.spigot.plugin.listener.JoinListener;
+import me.hsgamer.topper.spigot.plugin.manager.EntryConsumeManager;
 import me.hsgamer.topper.spigot.plugin.manager.QueryForwardManager;
 import me.hsgamer.topper.spigot.plugin.manager.TopManager;
 import me.hsgamer.topper.spigot.plugin.manager.TopQueryManager;
@@ -38,6 +39,7 @@ public class TopperPlugin extends BasePlugin {
                 new TopManager(this),
                 new TopQueryManager(this),
                 new QueryForwardManager(this),
+                new EntryConsumeManager(this),
 
                 new Permissions(this),
                 new CommandComponent(this,

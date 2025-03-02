@@ -46,6 +46,11 @@ public class TopQueryManager extends QueryManager<OfflinePlayer> {
             protected Optional<UUID> getKey(@NotNull OfflinePlayer actor, @NotNull Context<UUID, Double> context) {
                 return Optional.of(actor.getUniqueId());
             }
+
+            @Override
+            protected @NotNull String getDisplayRank(int rank, @NotNull Context<UUID, Double> context) {
+                return context.display.getDisplayValue((double) rank, context.parent.args);
+            }
         });
     }
 }

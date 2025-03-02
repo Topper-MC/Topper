@@ -59,7 +59,7 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
                 getKey(actor, context)
                         .map(context.agent::getSnapshotIndex)
                         .map(index -> index + 1)
-                        .map(Object::toString)
+                        .map(rank -> getDisplayRank(rank, context))
                         .orElse("0"));
         registerAction("top_size", (actor, context) ->
                 Integer.toString(context.agent.getSnapshot().size()));
@@ -74,6 +74,10 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
     }
 
     protected abstract Optional<K> getKey(@NotNull A actor, @NotNull Context<K, V> context);
+
+    protected @NotNull String getDisplayRank(int rank, @NotNull Context<K, V> context) {
+        return Integer.toString(rank);
+    }
 
     @Override
     protected Optional<Context<K, V>> getContext(@NotNull String query) {

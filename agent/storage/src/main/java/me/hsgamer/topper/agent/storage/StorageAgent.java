@@ -27,6 +27,7 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
     private final AtomicReference<Map<K, ValueWrapper<V>>> savingMap = new AtomicReference<>();
     private final AtomicBoolean saving = new AtomicBoolean(false);
     private int maxEntryPerCall = 10;
+    private boolean lazyLoad = false;
 
     public StorageAgent(DataHolder<K, V> holder, DataStorage<K, V> storage) {
         this.holder = holder;
@@ -96,10 +97,12 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
     @Override
     public void start() {
         storage.onRegister();
-        try {
-            storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
-        } catch (Exception e) {
-            LOGGER.log(LogLevel.ERROR, "Failed to load top entries for " + holder.getName(), e);
+        if (!lazyLoad) {
+            try {
+                storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
+            } catch (Exception e) {
+                LOGGER.log(LogLevel.ERROR, "Failed to load top entries for " + holder.getName(), e);
+            }
         }
     }
 
@@ -111,6 +114,13 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
     @Override
     public void beforeStop() {
         save(true);
+    }
+
+    @Override
+    public void onCreate(DataEntry<K, V> entry) {
+        if (lazyLoad) {
+            storage.load(entry.getKey()).ifPresent(value -> entry.setValue(value, false));
+        }
     }
 
     @Override
@@ -134,6 +144,10 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
 
     public void setMaxEntryPerCall(int taskSaveEntryPerTick) {
         this.maxEntryPerCall = taskSaveEntryPerTick;
+    }
+
+    public void setLazyLoad(boolean lazyLoad) {
+        this.lazyLoad = lazyLoad;
     }
 
     private static final class ValueWrapper<V> {

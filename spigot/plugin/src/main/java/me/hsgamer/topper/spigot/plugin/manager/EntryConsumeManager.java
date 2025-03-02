@@ -11,6 +11,8 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 public class EntryConsumeManager implements Loadable {
+    public static final String DEFAULT_GROUP = "topper";
+
     private final TopperPlugin plugin;
     private final Table<String, String, List<BiConsumer<UUID, Double>>> consumerTable = HashBasedTable.create();
     private final Map<String, BiFunction<String, UUID, Optional<Double>>> providerMap = new HashMap<>();
@@ -44,9 +46,16 @@ public class EntryConsumeManager implements Loadable {
         return function.apply(holder, uuid);
     }
 
+    public void consume(String group, String holder, UUID uuid, double value) {
+        List<BiConsumer<UUID, Double>> consumerList = consumerTable.get(group, holder);
+        if (consumerList != null) {
+            consumerList.forEach(consumer -> consumer.accept(uuid, value));
+        }
+    }
+
     @Override
     public void enable() {
-        addProvider("topper", (holder, uuid) ->
+        addProvider(DEFAULT_GROUP, (holder, uuid) ->
                 plugin.get(TopManager.class)
                         .getTopHolder(holder)
                         .flatMap(h -> h.getEntry(uuid))

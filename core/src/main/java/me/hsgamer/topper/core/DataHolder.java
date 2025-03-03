@@ -13,7 +13,7 @@ public class DataHolder<K, V> {
         this.name = name;
     }
 
-    protected V getDefaultValue() {
+    public V getDefaultValue() {
         return null;
     }
 

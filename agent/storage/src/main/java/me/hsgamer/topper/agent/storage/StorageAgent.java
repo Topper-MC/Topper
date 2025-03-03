@@ -63,7 +63,8 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
         Map<K, V> finalMap = map.entrySet()
                 .stream()
                 .filter(entry -> {
-                    if (entry.getValue().value == null) {
+                    V value = entry.getValue().value;
+                    if (value == null || Objects.equals(value, holder.getDefaultValue())) {
                         removeKeys.add(entry.getKey());
                         return false;
                     }

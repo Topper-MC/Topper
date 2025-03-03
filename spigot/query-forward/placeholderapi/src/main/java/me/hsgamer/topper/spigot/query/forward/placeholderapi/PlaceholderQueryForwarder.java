@@ -38,7 +38,7 @@ public class PlaceholderQueryForwarder<C extends QueryForwardContext<OfflinePlay
 
             @Override
             public String onRequest(OfflinePlayer player, @NotNull String params) {
-                return context.getQueryManager().get(player, params);
+                return context.getQuery().apply(player, params).result;
             }
         };
         expansion.register();

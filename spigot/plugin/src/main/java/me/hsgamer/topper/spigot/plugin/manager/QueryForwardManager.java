@@ -53,7 +53,7 @@ public class QueryForwardManager extends QueryForward<OfflinePlayer, QueryForwar
         }
 
         @Override
-        public QueryManager<OfflinePlayer> getQueryManager() {
+        public QueryManager<OfflinePlayer> getQuery() {
             return queryManager;
         }
     }

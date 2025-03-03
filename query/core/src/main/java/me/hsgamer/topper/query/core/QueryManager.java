@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-public class QueryManager<A> {
+public class QueryManager<A> implements Query<A> {
     private final List<BiFunction<@Nullable A, @NotNull String, @NotNull QueryResult>> queryList = new ArrayList<>();
 
     public void addQuery(BiFunction<@Nullable A, @NotNull String, @NotNull QueryResult> queryFunction) {
@@ -18,14 +18,14 @@ public class QueryManager<A> {
         queryList.remove(queryFunction);
     }
 
-    @Nullable
-    public String get(@Nullable A actor, String query) {
+    @Override
+    public @NotNull QueryResult apply(@Nullable A actor, @NotNull String query) {
         for (BiFunction<@Nullable A, @NotNull String, @NotNull QueryResult> queryFunction : queryList) {
             QueryResult result = queryFunction.apply(actor, query);
             if (result.handled) {
-                return result.result;
+                return result;
             }
         }
-        return null;
+        return QueryResult.notHandled();
     }
 }

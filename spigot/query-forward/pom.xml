@@ -14,6 +14,7 @@
     <modules>
         <module>placeholderapi</module>
         <module>plugin</module>
+        <module>miniplaceholders</module>
     </modules>
 
     <dependencies>

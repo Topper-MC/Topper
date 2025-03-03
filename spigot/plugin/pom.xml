@@ -161,6 +161,16 @@
             <artifactId>topper-spigot-query-forward-placeholderapi</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
+            <artifactId>topper-spigot-value-miniplaceholders</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
+            <artifactId>topper-spigot-query-forward-miniplaceholders</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.bstats</groupId>

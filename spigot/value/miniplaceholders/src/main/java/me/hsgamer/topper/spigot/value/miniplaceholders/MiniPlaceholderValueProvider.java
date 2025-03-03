@@ -5,7 +5,6 @@ import me.hsgamer.topper.value.core.ValueProvider;
 import me.hsgamer.topper.value.core.ValueWrapper;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -19,10 +18,11 @@ public class MiniPlaceholderValueProvider implements ValueProvider<Player, Strin
 
     @Override
     public @NotNull ValueWrapper<String> apply(@NotNull Player key) {
-        TagResolver resolver = MiniPlaceholders.getAudiencePlaceholders(key);
-
         try {
-            Component component = MiniMessage.miniMessage().deserialize(placeholder, resolver);
+            Component component = MiniMessage.miniMessage().deserialize(placeholder,
+                    MiniPlaceholders.getAudiencePlaceholders(key),
+                    MiniPlaceholders.getGlobalPlaceholders()
+            );
             String parsed = PlainTextComponentSerializer.plainText().serialize(component).trim();
             return ValueWrapper.handled(parsed);
         } catch (Exception e) {

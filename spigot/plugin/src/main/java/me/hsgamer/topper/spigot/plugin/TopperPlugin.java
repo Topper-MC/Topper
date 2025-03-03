@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 public class TopperPlugin extends BasePlugin {
+    public static final String GROUP = "topper";
+
     @Override
     protected List<Object> getComponents() {
         return Arrays.asList(

@@ -7,8 +7,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 public class GenericEntryUpdateEvent extends Event {
-    public static final String DEFAULT_GROUP = "topper";
-
     private static final HandlerList HANDLERS = new HandlerList();
     private final String group;
     private final String holder;
@@ -23,10 +21,6 @@ public class GenericEntryUpdateEvent extends Event {
         this.uuid = uuid;
         this.oldValue = oldValue;
         this.value = value;
-    }
-
-    public GenericEntryUpdateEvent(String holder, UUID uuid, @Nullable Double oldValue, @Nullable Double value, boolean async) {
-        this(DEFAULT_GROUP, holder, uuid, oldValue, value, async);
     }
 
     public static HandlerList getHandlerList() {

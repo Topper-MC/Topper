@@ -32,7 +32,7 @@ public class QueryForwardManager implements Loadable {
 
     @Override
     public void enable() {
-        addQueryManager(plugin, "topper", plugin.get(TopQueryManager.class));
+        addQueryManager(plugin, TopperPlugin.GROUP, plugin.get(TopQueryManager.class));
     }
 
     @Override

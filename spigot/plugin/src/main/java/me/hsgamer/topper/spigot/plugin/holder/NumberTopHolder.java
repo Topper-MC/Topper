@@ -95,8 +95,8 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
         addEntryAgent(new DataEntryAgent<UUID, Double>() {
             @Override
             public void onUpdate(DataEntry<UUID, Double> entry, Double oldValue, Double newValue) {
-                Bukkit.getPluginManager().callEvent(new GenericEntryUpdateEvent(name, entry.getKey(), oldValue, newValue, true));
-                instance.get(EntryConsumeManager.class).consume(EntryConsumeManager.DEFAULT_GROUP, name, entry.getKey(), newValue);
+                Bukkit.getPluginManager().callEvent(new GenericEntryUpdateEvent(TopperPlugin.GROUP, name, entry.getKey(), oldValue, newValue, true));
+                instance.get(EntryConsumeManager.class).consume(TopperPlugin.GROUP, name, entry.getKey(), newValue);
             }
         });
     }

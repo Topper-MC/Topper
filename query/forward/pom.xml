@@ -5,17 +5,17 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>me.hsgamer</groupId>
-        <artifactId>topper</artifactId>
+        <artifactId>topper-query</artifactId>
         <version>3.7.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>topper-query</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>core</module>
-        <module>simple</module>
-        <module>snapshot</module>
-        <module>holder</module>
-        <module>forward</module>
-    </modules>
+    <artifactId>topper-query-forward</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
+            <artifactId>topper-query-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>

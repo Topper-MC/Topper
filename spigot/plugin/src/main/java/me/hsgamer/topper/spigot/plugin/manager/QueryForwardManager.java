@@ -1,33 +1,23 @@
 package me.hsgamer.topper.spigot.plugin.manager;
 
 import io.github.projectunified.minelib.plugin.base.Loadable;
+import me.hsgamer.spigot.query.forward.plugin.PluginContext;
 import me.hsgamer.topper.query.core.QueryManager;
+import me.hsgamer.topper.query.forward.QueryForward;
+import me.hsgamer.topper.query.forward.QueryForwardContext;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.Plugin;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-
-public class QueryForwardManager implements Loadable {
+public class QueryForwardManager extends QueryForward<OfflinePlayer, QueryForwardManager.ForwardContext> implements Loadable {
     private final TopperPlugin plugin;
-    private final List<ForwardContext> queryManagers = new ArrayList<>();
-    private final List<Consumer<ForwardContext>> queryForwarders = new ArrayList<>();
 
     public QueryForwardManager(TopperPlugin plugin) {
         this.plugin = plugin;
     }
 
     public void addQueryManager(Plugin plugin, String name, QueryManager<OfflinePlayer> queryManager) {
-        ForwardContext forwardContext = new ForwardContext(plugin, name, queryManager);
-        queryManagers.add(forwardContext);
-        queryForwarders.forEach(forwarder -> forwarder.accept(forwardContext));
-    }
-
-    public void addQueryForwarder(Consumer<ForwardContext> forwarder) {
-        queryForwarders.add(forwarder);
-        queryManagers.forEach(forwarder);
+        addContext(new ForwardContext(plugin, name, queryManager));
     }
 
     @Override
@@ -37,11 +27,11 @@ public class QueryForwardManager implements Loadable {
 
     @Override
     public void disable() {
-        queryManagers.clear();
-        queryForwarders.clear();
+        clearContexts();
+        clearForwarders();
     }
 
-    public static final class ForwardContext {
+    public static final class ForwardContext implements QueryForwardContext<OfflinePlayer>, PluginContext {
         public final Plugin plugin;
         public final String name;
         public final QueryManager<OfflinePlayer> queryManager;
@@ -50,6 +40,21 @@ public class QueryForwardManager implements Loadable {
             this.plugin = plugin;
             this.name = name;
             this.queryManager = queryManager;
+        }
+
+        @Override
+        public Plugin getPlugin() {
+            return plugin;
+        }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public QueryManager<OfflinePlayer> getQueryManager() {
+            return queryManager;
         }
     }
 }

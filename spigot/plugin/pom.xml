@@ -85,13 +85,6 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <id>placeholderapi</id>
-            <url>https://repo.extendedclip.com/releases/</url>
-        </repository>
-    </repositories>
-
     <dependencies>
         <dependency>
             <groupId>me.hsgamer</groupId>
@@ -130,6 +123,11 @@
         </dependency>
         <dependency>
             <groupId>me.hsgamer</groupId>
+            <artifactId>topper-query-forward</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
             <artifactId>topper-spigot-storage-simple</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -156,6 +154,11 @@
         <dependency>
             <groupId>me.hsgamer</groupId>
             <artifactId>topper-spigot-value-placeholderapi</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
+            <artifactId>topper-spigot-query-forward-placeholderapi</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -217,13 +220,6 @@
             <groupId>io.github.projectunified</groupId>
             <artifactId>minelib-plugin-listener</artifactId>
             <version>${minelib.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>me.clip</groupId>
-            <artifactId>placeholderapi</artifactId>
-            <version>2.11.6</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

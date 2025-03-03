@@ -16,6 +16,7 @@
         <module>storage-simple</module>
         <module>plugin</module>
         <module>value</module>
+        <module>query-forward</module>
     </modules>
 
     <repositories>

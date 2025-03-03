@@ -19,7 +19,16 @@ public class MiniPlaceholdersQueryForwarder<C extends QueryForwardContext<Player
     @Override
     public void accept(C queryContext) {
         BiFunction<@Nullable Player, ArgumentQueue, Tag> queryFunction = (player, queue) -> {
-            String query = queue.popOr("You need to specify the query").value();
+            if (!queue.hasNext()) {
+                return TagsUtils.staticTag("You need to specify the query");
+            }
+
+            List<String> args = new ArrayList<>();
+            while (queue.hasNext()) {
+                args.add(queue.pop().value());
+            }
+
+            String query = String.join(":", args);
             String result = queryContext.getQuery().apply(player, query).result;
             if (result == null) {
                 return TagsUtils.EMPTY_TAG;

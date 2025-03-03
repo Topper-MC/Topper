@@ -11,8 +11,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
-    private final AtomicReference<List<Map.Entry<K, V>>> entryList = new AtomicReference<>(Collections.emptyList());
-    private final AtomicReference<Map<K, Integer>> indexMap = new AtomicReference<>(Collections.emptyMap());
+    private final AtomicReference<Snapshot<K, V>> snapshot = new AtomicReference<>(new Snapshot<>());
     private final List<Predicate<Map.Entry<K, V>>> filters = new ArrayList<>();
     private Comparator<V> comparator;
 
@@ -33,18 +32,15 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
     @Override
     public void run() {
         List<Map.Entry<K, V>> list = getUrgentSnapshot();
-        entryList.set(getUrgentSnapshot());
-
         Map<K, Integer> map = IntStream.range(0, list.size())
                 .boxed()
                 .collect(Collectors.toMap(i -> list.get(i).getKey(), i -> i));
-        indexMap.set(map);
+        snapshot.set(new Snapshot<>(list, map));
     }
 
     @Override
     public void stop() {
-        entryList.set(Collections.emptyList());
-        indexMap.set(Collections.emptyMap());
+        snapshot.set(new Snapshot<>());
     }
 
     public List<Map.Entry<K, V>> getUrgentSnapshot() {
@@ -56,11 +52,11 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
     }
 
     public List<Map.Entry<K, V>> getSnapshot() {
-        return entryList.get();
+        return snapshot.get().entryList;
     }
 
     public int getSnapshotIndex(K key) {
-        return indexMap.get().getOrDefault(key, -1);
+        return snapshot.get().indexMap.getOrDefault(key, -1);
     }
 
     public Optional<Map.Entry<K, V>> getSnapshotByIndex(int index) {
@@ -75,5 +71,19 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
 
     public void addFilter(Predicate<Map.Entry<K, V>> filter) {
         filters.add(filter);
+    }
+
+    private static final class Snapshot<K, V> {
+        private final List<Map.Entry<K, V>> entryList;
+        private final Map<K, Integer> indexMap;
+
+        private Snapshot(List<Map.Entry<K, V>> entryList, Map<K, Integer> indexMap) {
+            this.entryList = entryList;
+            this.indexMap = indexMap;
+        }
+
+        private Snapshot() {
+            this(Collections.emptyList(), Collections.emptyMap());
+        }
     }
 }

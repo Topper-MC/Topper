@@ -1,7 +1,7 @@
 package me.hsgamer.topper.spigot.plugin.manager;
 
 import io.github.projectunified.minelib.plugin.base.Loadable;
-import me.hsgamer.spigot.query.forward.plugin.PluginContext;
+import me.hsgamer.topper.spigot.query.forward.plugin.PluginContext;
 import me.hsgamer.topper.query.core.QueryManager;
 import me.hsgamer.topper.query.forward.QueryForward;
 import me.hsgamer.topper.query.forward.QueryForwardContext;

@@ -1,4 +1,4 @@
-package me.hsgamer.spigot.query.forward.plugin;
+package me.hsgamer.topper.spigot.query.forward.plugin;
 
 import org.bukkit.plugin.Plugin;
 

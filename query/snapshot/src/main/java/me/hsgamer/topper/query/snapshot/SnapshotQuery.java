@@ -29,7 +29,7 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
                 // IGNORED
             }
             K key = context.agent.getSnapshotByIndex(i - 1).map(Map.Entry::getKey).orElse(null);
-            return context.display.getDisplayName(key);
+            return context.display.getDisplayKey(key);
         });
         registerAction("top_value", (actor, context) -> {
             String[] split = context.parent.args.split(";", 2);

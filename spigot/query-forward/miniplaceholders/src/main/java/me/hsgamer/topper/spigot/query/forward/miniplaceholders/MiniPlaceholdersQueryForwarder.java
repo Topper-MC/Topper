@@ -3,6 +3,7 @@ package me.hsgamer.topper.spigot.query.forward.miniplaceholders;
 import io.github.miniplaceholders.api.Expansion;
 import io.github.miniplaceholders.api.utils.TagsUtils;
 import me.hsgamer.topper.query.forward.QueryForwardContext;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.ArgumentQueue;
 import org.bukkit.entity.Player;
@@ -20,7 +21,7 @@ public class MiniPlaceholdersQueryForwarder<C extends QueryForwardContext<Player
     public void accept(C queryContext) {
         BiFunction<@Nullable Player, ArgumentQueue, Tag> queryFunction = (player, queue) -> {
             if (!queue.hasNext()) {
-                return TagsUtils.staticTag("You need to specify the query");
+                return Tag.selfClosingInserting(Component.text("You need to specify the query"));
             }
 
             List<String> args = new ArrayList<>();
@@ -33,7 +34,7 @@ public class MiniPlaceholdersQueryForwarder<C extends QueryForwardContext<Player
             if (result == null) {
                 return TagsUtils.EMPTY_TAG;
             } else {
-                return TagsUtils.staticTag(result);
+                return Tag.selfClosingInserting(Component.text(result));
             }
         };
 

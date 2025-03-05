@@ -28,6 +28,7 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
     private final AtomicBoolean saving = new AtomicBoolean(false);
     private int maxEntryPerCall = 10;
     private boolean lazyLoad = false;
+    private boolean scheduleOnEntryRemove = true;
 
     public StorageAgent(DataHolder<K, V> holder, DataStorage<K, V> storage) {
         this.holder = holder;
@@ -131,7 +132,9 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
 
     @Override
     public void onRemove(DataEntry<K, V> entry) {
-        storeMap.get().put(entry.getKey(), new ValueWrapper<>(null));
+        if (scheduleOnEntryRemove) {
+            storeMap.get().put(entry.getKey(), new ValueWrapper<>(null));
+        }
     }
 
     @Override
@@ -149,6 +152,10 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
 
     public void setLazyLoad(boolean lazyLoad) {
         this.lazyLoad = lazyLoad;
+    }
+
+    public void setScheduleOnEntryRemove(boolean scheduleOnEntryRemove) {
+        this.scheduleOnEntryRemove = scheduleOnEntryRemove;
     }
 
     private static final class ValueWrapper<V> {

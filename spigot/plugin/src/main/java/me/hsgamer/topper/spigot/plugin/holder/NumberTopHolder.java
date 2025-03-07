@@ -14,7 +14,6 @@ import me.hsgamer.topper.spigot.agent.runnable.SpigotRunnableAgent;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 import me.hsgamer.topper.spigot.plugin.builder.ValueProviderBuilder;
 import me.hsgamer.topper.spigot.plugin.config.MainConfig;
-import me.hsgamer.topper.spigot.plugin.event.GenericEntryUpdateEvent;
 import me.hsgamer.topper.spigot.plugin.holder.display.ValueDisplay;
 import me.hsgamer.topper.spigot.plugin.manager.EntryConsumeManager;
 import me.hsgamer.topper.spigot.plugin.manager.TopManager;
@@ -95,8 +94,13 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
         addEntryAgent(new DataEntryAgent<UUID, Double>() {
             @Override
             public void onUpdate(DataEntry<UUID, Double> entry, Double oldValue, Double newValue) {
-                Bukkit.getPluginManager().callEvent(new GenericEntryUpdateEvent(TopperPlugin.GROUP, name, entry.getKey(), oldValue, newValue, true));
-                instance.get(EntryConsumeManager.class).consume(TopperPlugin.GROUP, name, entry.getKey(), newValue);
+                instance.get(EntryConsumeManager.class).consume(new EntryConsumeManager.Context(
+                        TopperPlugin.GROUP,
+                        name,
+                        entry.getKey(),
+                        oldValue,
+                        newValue
+                ));
             }
         });
     }

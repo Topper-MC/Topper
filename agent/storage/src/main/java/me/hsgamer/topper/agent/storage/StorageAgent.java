@@ -96,6 +96,10 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
         }
     }
 
+    protected void scheduleValue(K key, @Nullable V value) {
+        storeMap.get().put(key, new ValueWrapper<>(value));
+    }
+
     @Override
     public void start() {
         storage.onRegister();
@@ -127,13 +131,13 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
 
     @Override
     public void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
-        storeMap.get().put(entry.getKey(), new ValueWrapper<>(newValue));
+        scheduleValue(entry.getKey(), oldValue);
     }
 
     @Override
     public void onRemove(DataEntry<K, V> entry) {
         if (scheduleOnEntryRemove) {
-            storeMap.get().put(entry.getKey(), new ValueWrapper<>(null));
+            scheduleValue(entry.getKey(), null);
         }
     }
 

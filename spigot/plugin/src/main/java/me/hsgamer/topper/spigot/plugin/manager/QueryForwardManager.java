@@ -1,11 +1,11 @@
 package me.hsgamer.topper.spigot.plugin.manager;
 
 import io.github.projectunified.minelib.plugin.base.Loadable;
-import me.hsgamer.topper.spigot.query.forward.plugin.PluginContext;
 import me.hsgamer.topper.query.core.QueryManager;
 import me.hsgamer.topper.query.forward.QueryForward;
 import me.hsgamer.topper.query.forward.QueryForwardContext;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
+import me.hsgamer.topper.spigot.query.forward.plugin.PluginContext;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.Plugin;
 

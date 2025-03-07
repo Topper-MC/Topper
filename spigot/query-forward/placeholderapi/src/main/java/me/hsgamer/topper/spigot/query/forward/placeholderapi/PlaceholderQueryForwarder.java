@@ -1,8 +1,8 @@
 package me.hsgamer.topper.spigot.query.forward.placeholderapi;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
-import me.hsgamer.topper.spigot.query.forward.plugin.PluginContext;
 import me.hsgamer.topper.query.forward.QueryForwardContext;
+import me.hsgamer.topper.spigot.query.forward.plugin.PluginContext;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 

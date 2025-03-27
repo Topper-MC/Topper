@@ -24,6 +24,7 @@ import org.bukkit.entity.Player;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 
 public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
@@ -56,15 +57,29 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
                 .map(String::toLowerCase)
                 .map(Boolean::parseBoolean)
                 .orElse(false);
-        this.updateAgent = new UpdateAgent<>(this, uuid -> CompletableFuture.supplyAsync(() ->
-                valueProvider.apply(uuid).asOptional((errorMessage, throwable) -> {
+        Queue<Map.Entry<UUID, CompletableFuture<Optional<Double>>>> queue = new ConcurrentLinkedQueue<>();
+        addAgent(new SpigotRunnableAgent(() -> {
+            while (true) {
+                Map.Entry<UUID, CompletableFuture<Optional<Double>>> entry = queue.poll();
+                if (entry == null) {
+                    break;
+                }
+                UUID uuid = entry.getKey();
+                Optional<Double> value = valueProvider.apply(uuid).asOptional((errorMessage, throwable) -> {
                     if (showErrors) {
                         instance.getLogger().log(Level.WARNING, "Error on getting value for " + name + " from " + uuid + " - " + errorMessage, throwable);
                     }
-                }), (isAsync ? AsyncScheduler.get(instance) : GlobalScheduler.get(instance)).getExecutor()));
+                });
+                entry.getValue().complete(value);
+            }
+        }, isAsync ? AsyncScheduler.get(instance) : GlobalScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
+        this.updateAgent = new UpdateAgent<>(this, uuid -> {
+            CompletableFuture<Optional<Double>> future = new CompletableFuture<>();
+            return queue.offer(new AbstractMap.SimpleEntry<>(uuid, future)) ? future : CompletableFuture.completedFuture(Optional.empty());
+        });
         updateAgent.setMaxEntryPerCall(instance.get(MainConfig.class).getTaskUpdateEntryPerTick());
         addEntryAgent(updateAgent);
-        addAgent(new SpigotRunnableAgent(updateAgent, AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
+        addAgent(new SpigotRunnableAgent(updateAgent, AsyncScheduler.get(instance), 0));
         List<String> ignorePermissions = CollectionUtils.createStringListFromObject(map.get("ignore-permission"), true);
         if (!ignorePermissions.isEmpty()) {
             updateAgent.addFilter(uuid -> {

@@ -131,7 +131,7 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
 
     @Override
     public void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
-        scheduleValue(entry.getKey(), oldValue);
+        scheduleValue(entry.getKey(), newValue);
     }
 
     @Override

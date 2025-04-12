@@ -7,6 +7,10 @@ public class StringConverter extends SimpleValueConverter<String> {
         super(Function.identity(), Function.identity(), valueName, sqlType);
     }
 
+    public StringConverter(String valueName, String sqlType, boolean isStringNationalized) {
+        super(Function.identity(), Function.identity(), valueName, sqlType, isStringNationalized);
+    }
+
     public StringConverter(String valueName, boolean isStringNationalized, int stringMaxLength) {
         super(Function.identity(), Function.identity(), valueName, isStringNationalized, stringMaxLength);
     }

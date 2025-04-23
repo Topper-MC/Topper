@@ -12,6 +12,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,6 +57,17 @@ public class StatisticValueProvider implements ValueProvider<Player, Integer> {
         return new StatisticValueProvider(stat, mat, entity);
     }
 
+    private static <T> ValueWrapper<Integer> apply(Player player, Collection<T> values, BiFunction<Player, T, Integer> getFunction, Predicate<T> predicate, Function<T, String> errorMessage) {
+        int total = 0;
+        for (T value : values) {
+            if (value == null || !predicate.test(value)) {
+                return ValueWrapper.error(errorMessage.apply(value));
+            }
+            total += getFunction.apply(player, value);
+        }
+        return ValueWrapper.handled(total);
+    }
+
     @Override
     public @NotNull ValueWrapper<Integer> apply(@NotNull Player player) {
         if (statistic == null) {
@@ -66,45 +80,33 @@ public class StatisticValueProvider implements ValueProvider<Player, Integer> {
                     return ValueWrapper.error("No material provided for BLOCK statistic: " + statistic);
                 }
 
-                int total = 0;
-                for (Material material : materials) {
-                    if (material == null || !material.isBlock()) {
-                        return ValueWrapper.error("Invalid material for BLOCK statistic: " + statistic + " - " + material);
-                    }
-                    total += player.getStatistic(statistic, material);
-                }
-
-                return ValueWrapper.handled(total);
+                return apply(player, materials,
+                        (p, m) -> p.getStatistic(statistic, m),
+                        Material::isBlock,
+                        m -> "Invalid material for BLOCK statistic: " + statistic + " - " + m
+                );
             }
             case ITEM: {
                 if (materials.isEmpty()) {
                     return ValueWrapper.error("No material provided for ITEM statistic: " + statistic);
                 }
 
-                int total = 0;
-                for (Material material : materials) {
-                    if (material == null || !material.isItem()) {
-                        return ValueWrapper.error("Invalid material for ITEM statistic: " + statistic + " - " + material);
-                    }
-                    total += player.getStatistic(statistic, material);
-                }
-
-                return ValueWrapper.handled(total);
+                return apply(player, materials,
+                        (p, m) -> p.getStatistic(statistic, m),
+                        Material::isItem,
+                        m -> "Invalid material for ITEM statistic: " + statistic + " - " + m
+                );
             }
             case ENTITY: {
                 if (entityTypes.isEmpty()) {
                     return ValueWrapper.error("No entity type provided for ENTITY statistic: " + statistic);
                 }
 
-                int total = 0;
-                for (EntityType entityType : entityTypes) {
-                    if (entityType == null || !entityType.isAlive()) {
-                        return ValueWrapper.error("Invalid entity type for ENTITY statistic: " + statistic + " - " + entityType);
-                    }
-                    total += player.getStatistic(statistic, entityType);
-                }
-
-                return ValueWrapper.handled(total);
+                return apply(player, entityTypes,
+                        (p, e) -> p.getStatistic(statistic, e),
+                        e -> true,
+                        e -> "Invalid entity type for ENTITY statistic: " + statistic + " - " + e
+                );
             }
             default:
                 return ValueWrapper.handled(player.getStatistic(statistic));

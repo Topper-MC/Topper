@@ -8,24 +8,26 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Map;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class StatisticValueProvider implements ValueProvider<Player, Integer> {
     private final Statistic statistic;
-    private final Material material;
-    private final EntityType entityType;
+    private final List<Material> materials;
+    private final List<EntityType> entityTypes;
 
-    public StatisticValueProvider(Statistic statistic, Material material, EntityType entityType) {
+    public StatisticValueProvider(Statistic statistic, List<Material> materials, List<EntityType> entityTypes) {
         this.statistic = statistic;
-        this.material = material;
-        this.entityType = entityType;
+        this.materials = materials;
+        this.entityTypes = entityTypes;
     }
 
-    public static StatisticValueProvider fromMap(Map<String, Object> map) {
-        Statistic statistic = Optional.ofNullable(map.get("statistic"))
-                .map(Objects::toString)
+    public static StatisticValueProvider fromRaw(String statistic, Collection<String> materials, Collection<String> entityTypes) {
+        Statistic stat = Optional.ofNullable(statistic)
                 .map(String::toUpperCase)
                 .flatMap(s -> {
                     try {
@@ -35,22 +37,21 @@ public class StatisticValueProvider implements ValueProvider<Player, Integer> {
                     }
                 })
                 .orElse(null);
-        Material material = Optional.ofNullable(map.get("material"))
-                .map(Objects::toString)
+        List<Material> mat = materials.stream()
                 .map(Material::matchMaterial)
-                .orElse(null);
-        EntityType entityType = Optional.ofNullable(map.get("entity"))
-                .map(Objects::toString)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        List<EntityType> entity = entityTypes.stream()
                 .map(String::toUpperCase)
                 .flatMap(s -> {
                     try {
-                        return Optional.of(EntityType.valueOf(s));
+                        return Stream.of(EntityType.valueOf(s));
                     } catch (IllegalArgumentException e) {
-                        return Optional.empty();
+                        return Stream.empty();
                     }
                 })
-                .orElse(null);
-        return new StatisticValueProvider(statistic, material, entityType);
+                .collect(Collectors.toList());
+        return new StatisticValueProvider(stat, mat, entity);
     }
 
     @Override
@@ -60,21 +61,51 @@ public class StatisticValueProvider implements ValueProvider<Player, Integer> {
         }
 
         switch (statistic.getType()) {
-            case BLOCK:
-                if (material == null || !material.isBlock()) {
-                    return ValueWrapper.error("Invalid material for BLOCK statistic: " + statistic);
+            case BLOCK: {
+                if (materials.isEmpty()) {
+                    return ValueWrapper.error("No material provided for BLOCK statistic: " + statistic);
                 }
-                return ValueWrapper.handled(player.getStatistic(statistic, material));
-            case ITEM:
-                if (material == null) {
-                    return ValueWrapper.error("Invalid material for ITEM statistic: " + statistic);
+
+                int total = 0;
+                for (Material material : materials) {
+                    if (material == null || !material.isBlock()) {
+                        return ValueWrapper.error("Invalid material for BLOCK statistic: " + statistic + " - " + material);
+                    }
+                    total += player.getStatistic(statistic, material);
                 }
-                return ValueWrapper.handled(player.getStatistic(statistic, material));
-            case ENTITY:
-                if (entityType == null) {
-                    return ValueWrapper.error("Invalid entity for ENTITY statistic: " + statistic);
+
+                return ValueWrapper.handled(total);
+            }
+            case ITEM: {
+                if (materials.isEmpty()) {
+                    return ValueWrapper.error("No material provided for ITEM statistic: " + statistic);
                 }
-                return ValueWrapper.handled(player.getStatistic(statistic, entityType));
+
+                int total = 0;
+                for (Material material : materials) {
+                    if (material == null || !material.isItem()) {
+                        return ValueWrapper.error("Invalid material for ITEM statistic: " + statistic + " - " + material);
+                    }
+                    total += player.getStatistic(statistic, material);
+                }
+
+                return ValueWrapper.handled(total);
+            }
+            case ENTITY: {
+                if (entityTypes.isEmpty()) {
+                    return ValueWrapper.error("No entity type provided for ENTITY statistic: " + statistic);
+                }
+
+                int total = 0;
+                for (EntityType entityType : entityTypes) {
+                    if (entityType == null || !entityType.isAlive()) {
+                        return ValueWrapper.error("Invalid entity type for ENTITY statistic: " + statistic + " - " + entityType);
+                    }
+                    total += player.getStatistic(statistic, entityType);
+                }
+
+                return ValueWrapper.handled(total);
+            }
             default:
                 return ValueWrapper.handled(player.getStatistic(statistic));
         }

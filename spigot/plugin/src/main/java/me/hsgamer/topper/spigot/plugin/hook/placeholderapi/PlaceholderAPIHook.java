@@ -37,8 +37,8 @@ public class PlaceholderAPIHook implements Loadable {
                             throw new IllegalArgumentException(
                                     String.join(" ",
                                             "There is a problem when parsing your placeholder.",
-                                            "This is not a Topper's issue, but an issue with your placeholder.",
-                                            "Take a look at the wiki and check against your placeholder setting.",
+                                            "This is usually not a Topper's issue, but an issue with your placeholder.",
+                                            "Take a look at the wiki and check against your placeholder settings.",
                                             "https://topper-mc.github.io/Wiki/spigot/provider/placeholder.html#frequently-asked-questions"
                                     ),
                                     e

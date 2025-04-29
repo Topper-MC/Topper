@@ -10,7 +10,7 @@ public interface ValueProvider<K, V> extends Function<K, ValueWrapper<V>> {
         return k -> ValueWrapper.notHandled();
     }
 
-    static <K, V> ValueProvider<K, V> ofSimple(Function<@NotNull K, @Nullable V> function) {
+    static <K, V> ValueProvider<K, V> simple(Function<@NotNull K, @Nullable V> function) {
         return k -> {
             try {
                 return ValueWrapper.handled(function.apply(k));
@@ -18,6 +18,10 @@ public interface ValueProvider<K, V> extends Function<K, ValueWrapper<V>> {
                 return ValueWrapper.error("An error occurred while getting the value", e);
             }
         };
+    }
+
+    static <K, V> ValueProvider<K, V> error(@NotNull String errorMessage) {
+        return k -> ValueWrapper.error(errorMessage);
     }
 
     @Override

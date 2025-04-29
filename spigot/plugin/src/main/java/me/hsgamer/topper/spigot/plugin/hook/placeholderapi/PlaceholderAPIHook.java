@@ -30,7 +30,21 @@ public class PlaceholderAPIHook implements Loadable {
                     .orElse(false);
             return new PlaceholderValueProvider(placeholder, isOnlineOnly)
                     .thenApply(NumberStringDeformatter.deformatterOrIdentity(map))
-                    .thenApply(Double::parseDouble)
+                    .thenApply(s -> {
+                        try {
+                            return Double.parseDouble(s);
+                        } catch (NumberFormatException e) {
+                            throw new IllegalArgumentException(
+                                    String.join(" ",
+                                            "There is a problem when parsing your placeholder.",
+                                            "This is not a Topper's issue, but an issue with your placeholder.",
+                                            "Take a look at the wiki and check against your placeholder setting.",
+                                            "https://topper-mc.github.io/Wiki/spigot/provider/placeholder.html#frequently-asked-questions"
+                                    ),
+                                    e
+                            );
+                        }
+                    })
                     .keyMapper(Bukkit::getOfflinePlayer);
         }, "placeholderapi", "placeholder", "papi");
         plugin.get(QueryForwardManager.class).addForwarder(queryForwarder);

@@ -4,6 +4,7 @@ import io.github.projectunified.minelib.plugin.base.Loadable;
 import me.hsgamer.topper.spigot.plugin.TopperPlugin;
 import me.hsgamer.topper.spigot.plugin.builder.ValueProviderBuilder;
 import me.hsgamer.topper.spigot.plugin.manager.QueryForwardManager;
+import me.hsgamer.topper.spigot.plugin.util.ParseUtil;
 import me.hsgamer.topper.spigot.query.forward.placeholderapi.PlaceholderQueryForwarder;
 import me.hsgamer.topper.spigot.value.placeholderapi.PlaceholderValueProvider;
 import me.hsgamer.topper.value.string.NumberStringDeformatter;
@@ -30,21 +31,7 @@ public class PlaceholderAPIHook implements Loadable {
                     .orElse(false);
             return new PlaceholderValueProvider(placeholder, isOnlineOnly)
                     .thenApply(NumberStringDeformatter.deformatterOrIdentity(map))
-                    .thenApply(s -> {
-                        try {
-                            return Double.parseDouble(s);
-                        } catch (NumberFormatException e) {
-                            throw new IllegalArgumentException(
-                                    String.join(" ",
-                                            "There is a problem when parsing your placeholder.",
-                                            "This is usually not a Topper's issue, but an issue with your placeholder.",
-                                            "Take a look at the wiki and check against your placeholder settings.",
-                                            "https://topper-mc.github.io/Wiki/spigot/provider/placeholder.html#frequently-asked-questions"
-                                    ),
-                                    e
-                            );
-                        }
-                    })
+                    .thenApply(ParseUtil::parsePlaceholderNumber)
                     .keyMapper(Bukkit::getOfflinePlayer);
         }, "placeholderapi", "placeholder", "papi");
         plugin.get(QueryForwardManager.class).addForwarder(queryForwarder);

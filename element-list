@@ -24,6 +24,7 @@ me.hsgamer.topper.spigot.plugin.hook.miniplaceholders
 me.hsgamer.topper.spigot.plugin.hook.placeholderapi
 me.hsgamer.topper.spigot.plugin.listener
 me.hsgamer.topper.spigot.plugin.manager
+me.hsgamer.topper.spigot.plugin.util
 me.hsgamer.topper.spigot.query.forward.miniplaceholders
 me.hsgamer.topper.spigot.query.forward.placeholderapi
 me.hsgamer.topper.spigot.query.forward.plugin

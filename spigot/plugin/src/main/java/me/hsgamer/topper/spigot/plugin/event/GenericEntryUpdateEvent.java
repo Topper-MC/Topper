@@ -6,7 +6,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
-@Deprecated
 public class GenericEntryUpdateEvent extends Event {
     private static final HandlerList HANDLERS = new HandlerList();
     private final String group;

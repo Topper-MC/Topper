@@ -18,15 +18,20 @@ public class MiniPlaceholderValueProvider implements ValueProvider<Player, Strin
 
     @Override
     public @NotNull ValueWrapper<String> apply(@NotNull Player key) {
+        String parsed;
         try {
             Component component = MiniMessage.miniMessage().deserialize(placeholder,
                     MiniPlaceholders.getAudiencePlaceholders(key),
                     MiniPlaceholders.getGlobalPlaceholders()
             );
-            String parsed = PlainTextComponentSerializer.plainText().serialize(component).trim();
-            return ValueWrapper.handled(parsed);
+            parsed = PlainTextComponentSerializer.plainText().serialize(component).trim();
+            if (placeholder.equals(parsed)) {
+                return ValueWrapper.notHandled();
+            }
         } catch (Exception e) {
             return ValueWrapper.error("Error while parsing the placeholder: " + placeholder, e);
         }
+
+        return ValueWrapper.handled(parsed);
     }
 }

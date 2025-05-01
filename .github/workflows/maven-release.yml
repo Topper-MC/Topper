@@ -29,7 +29,6 @@ jobs:
         with:
           files: |
             **/target/topper-spigot-plugin-${{ github.ref_name }}-shaded.jar
-            **/target/*.jar
         env:
           DESCRIPTION: ${{ steps.changelog.outputs.changelog }}
           GAME_VERSIONS: "1.8..latest"

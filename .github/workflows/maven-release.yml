@@ -28,8 +28,8 @@ jobs:
         uses: HSGamer/action-mcreleaser@main
         with:
           files: |
-            **/target/topper-*-shaded.jar
-            **/target/topper-*-@(sources|javadoc).jar
+            **/target/topper-spigot-plugin-${{ github.ref_name }}-shaded.jar
+            **/target/*.jar
         env:
           DESCRIPTION: ${{ steps.changelog.outputs.changelog }}
           GAME_VERSIONS: "1.8..latest"

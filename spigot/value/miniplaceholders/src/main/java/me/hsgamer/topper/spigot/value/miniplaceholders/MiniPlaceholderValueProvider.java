@@ -25,11 +25,12 @@ public class MiniPlaceholderValueProvider implements ValueProvider<Player, Strin
                     MiniPlaceholders.getGlobalPlaceholders()
             );
             parsed = PlainTextComponentSerializer.plainText().serialize(component).trim();
-            if (placeholder.equals(parsed)) {
-                return ValueWrapper.notHandled();
-            }
         } catch (Exception e) {
             return ValueWrapper.error("Error while parsing the placeholder: " + placeholder, e);
+        }
+
+        if (placeholder.equals(parsed)) {
+            return ValueWrapper.notHandled();
         }
 
         return ValueWrapper.handled(parsed);

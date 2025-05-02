@@ -24,13 +24,14 @@ public class PlaceholderValueProvider implements ValueProvider<OfflinePlayer, St
         String replaced;
         try {
             replaced = PlaceholderAPI.setPlaceholders(player, placeholder);
-            if (placeholder.equals(replaced)) {
-                return ValueWrapper.notHandled();
-            }
         } catch (Exception e) {
             return ValueWrapper.error("Error while parsing the placeholder: " + placeholder, e);
         }
 
-        return ValueWrapper.handled(placeholder);
+        if (placeholder.equals(replaced)) {
+            return ValueWrapper.notHandled();
+        }
+
+        return ValueWrapper.handled(replaced);
     }
 }

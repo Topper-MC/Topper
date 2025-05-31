@@ -9,7 +9,7 @@ import me.hsgamer.topper.spigot.plugin.manager.QueryForwardManager;
 import me.hsgamer.topper.spigot.plugin.util.ParseUtil;
 import me.hsgamer.topper.spigot.query.forward.miniplaceholders.MiniPlaceholdersQueryForwarder;
 import me.hsgamer.topper.spigot.value.miniplaceholders.MiniPlaceholderValueProvider;
-import me.hsgamer.topper.value.string.NumberStringDeformatter;
+import me.hsgamer.topper.value.string.StringDeformatters;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +31,7 @@ public class MiniPlaceholdersHook implements Loadable {
         plugin.get(ValueProviderBuilder.class).register(map -> {
             String placeholder = Optional.ofNullable(map.get("placeholder")).map(Object::toString).orElse("");
             return new MiniPlaceholderValueProvider(placeholder)
-                    .thenApply(NumberStringDeformatter.deformatterOrIdentity(map))
+                    .thenApply(StringDeformatters.deformatterOrIdentity(map))
                     .thenApply(ParseUtil::parsePlaceholderNumber)
                     .keyMapper(Bukkit::getPlayer);
         }, "miniplaceholders", "miniplaceholder", "mini-placeholders", "mini-placeholder");

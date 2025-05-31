@@ -7,7 +7,7 @@ import me.hsgamer.topper.spigot.plugin.manager.QueryForwardManager;
 import me.hsgamer.topper.spigot.plugin.util.ParseUtil;
 import me.hsgamer.topper.spigot.query.forward.placeholderapi.PlaceholderQueryForwarder;
 import me.hsgamer.topper.spigot.value.placeholderapi.PlaceholderValueProvider;
-import me.hsgamer.topper.value.string.NumberStringDeformatter;
+import me.hsgamer.topper.value.string.StringDeformatters;
 import org.bukkit.Bukkit;
 
 import java.util.Optional;
@@ -30,7 +30,7 @@ public class PlaceholderAPIHook implements Loadable {
                     .map(Boolean::parseBoolean)
                     .orElse(false);
             return new PlaceholderValueProvider(placeholder, isOnlineOnly)
-                    .thenApply(NumberStringDeformatter.deformatterOrIdentity(map))
+                    .thenApply(StringDeformatters.deformatterOrIdentity(map))
                     .thenApply(ParseUtil::parsePlaceholderNumber)
                     .keyMapper(Bukkit::getOfflinePlayer);
         }, "placeholderapi", "placeholder", "papi");

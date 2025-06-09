@@ -18,6 +18,7 @@ import me.hsgamer.topper.spigot.plugin.holder.display.ValueDisplay;
 import me.hsgamer.topper.spigot.plugin.manager.EntryConsumeManager;
 import me.hsgamer.topper.spigot.plugin.manager.TopManager;
 import me.hsgamer.topper.value.core.ValueProvider;
+import me.hsgamer.topper.value.core.ValueWrapper;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -56,19 +57,22 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
                 .map(Boolean::parseBoolean)
                 .orElse(false);
         List<String> ignorePermissions = CollectionUtils.createStringListFromObject(map.get("ignore-permission"), true);
-        this.updateAgent = new UpdateAgent<>(this, uuid -> valueProvider.apply(uuid).asOptional((errorMessage, throwable) -> {
-            if (showErrors) {
-                instance.getLogger().log(Level.WARNING, "Error on getting value for " + name + " from " + uuid + " - " + errorMessage, throwable);
-            }
-        }));
+        this.updateAgent = new UpdateAgent<>(this, valueProvider);
         if (!ignorePermissions.isEmpty()) {
             updateAgent.addFilter(uuid -> {
                 Player player = Bukkit.getPlayer(uuid);
                 return player == null || ignorePermissions.stream().noneMatch(player::hasPermission);
             });
         }
+        if (showErrors) {
+            updateAgent.setErrorHandler((uuid, valueWrapper) -> {
+                if (valueWrapper.state == ValueWrapper.State.ERROR) {
+                    instance.getLogger().log(Level.WARNING, "Error on getting value for " + name + " from " + uuid + " - " + valueWrapper.errorMessage, valueWrapper.throwable);
+                }
+            });
+        }
         addEntryAgent(updateAgent);
-        addAgent(new SpigotRunnableAgent(updateAgent.getUpdateRunnable(instance.get(MainConfig.class).getTaskUpdateEntryPerTick()), isAsync ? AsyncScheduler.get(instance) : GlobalScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
+        addAgent(new SpigotRunnableAgent(updateAgent.getUpdateRunnable(instance.get(MainConfig.class).getTaskUpdateEntryPerTick(), 2), isAsync ? AsyncScheduler.get(instance) : GlobalScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
         addAgent(new SpigotRunnableAgent(updateAgent.getSetRunnable(), AsyncScheduler.get(instance), 0));
 
         this.snapshotAgent = SnapshotAgent.create(this);

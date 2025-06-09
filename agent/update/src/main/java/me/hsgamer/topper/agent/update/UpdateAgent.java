@@ -7,6 +7,7 @@ import me.hsgamer.topper.value.core.ValueWrapper;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -16,11 +17,11 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
     private final Function<K, ValueWrapper<V>> updateFunction;
 
     private final Map<K, ValueStatus> map = new ConcurrentHashMap<>();
-    private final ValueStatus updateMode = new ValueStatus(null, ValueStatus.UPDATE);
-    private final ValueStatus notHandledMode = new ValueStatus(null, ValueStatus.NOT_HANDLED);
+    private final ValueStatus updateMode = new ValueStatus();
 
     private List<Predicate<K>> filters = null;
     private BiConsumer<K, ValueWrapper<V>> errorHandler = null;
+    private int maxSkips = 1;
 
     public UpdateAgent(DataHolder<K, V> holder, Function<K, ValueWrapper<V>> updateFunction) {
         this.holder = holder;
@@ -38,40 +39,34 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
         this.errorHandler = errorHandler;
     }
 
+    public void setMaxSkips(int maxSkips) {
+        this.maxSkips = maxSkips;
+    }
+
     private boolean canUpdate(K key) {
         return filters == null || filters.isEmpty() || filters.stream().allMatch(predicate -> predicate.test(key));
     }
 
-    public Runnable getUpdateRunnable(int maxEntryPerCall, int iterationsBeforeHandleAll) {
+    public Runnable getUpdateRunnable(int maxEntryPerCall) {
         return new Runnable() {
-            transient Iterator<Map.Entry<K, ValueStatus>> iterator;
-            int iteratorCount = 0;
+            private final AtomicReference<Iterator<Map.Entry<K, ValueStatus>>> iteratorRef = new AtomicReference<>();
 
             @Override
             public void run() {
-                if (iterator == null || !iterator.hasNext()) {
-                    iterator = map.entrySet().iterator();
-                    iteratorCount++;
-                }
-
-                boolean handleAll = false;
-                if (iteratorCount >= iterationsBeforeHandleAll) {
-                    handleAll = true;
-                    iteratorCount = 0;
-                }
-
+                Iterator<Map.Entry<K, ValueStatus>> iterator = iteratorRef.updateAndGet(old -> old == null || !old.hasNext() ? map.entrySet().iterator() : old);
                 int count = 0;
                 while (iterator.hasNext() && count < maxEntryPerCall) {
                     Map.Entry<K, ValueStatus> entry = iterator.next();
                     K key = entry.getKey();
                     ValueStatus valueStatus = entry.getValue();
 
-                    if (!handleAll && valueStatus.mode == ValueStatus.NOT_HANDLED) {
+                    if (valueStatus.skip()) {
+                        entry.setValue(valueStatus.decrementSkips());
                         continue;
                     }
 
                     if (!canUpdate(key)) {
-                        entry.setValue(notHandledMode);
+                        entry.setValue(new ValueStatus(maxSkips));
                         continue;
                     }
 
@@ -81,13 +76,11 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
                             if (errorHandler != null) {
                                 errorHandler.accept(key, valueWrapper);
                             }
-                            entry.setValue(updateMode);
-                            break;
                         case NOT_HANDLED:
-                            entry.setValue(notHandledMode);
+                            entry.setValue(new ValueStatus(maxSkips));
                             break;
                         default:
-                            entry.setValue(new ValueStatus(valueWrapper.value, ValueStatus.SET));
+                            entry.setValue(new ValueStatus(valueWrapper.value));
                             break;
                     }
                     count++;
@@ -98,19 +91,16 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
 
     public Runnable getSetRunnable() {
         return new Runnable() {
-            private Iterator<Map.Entry<K, ValueStatus>> iterator;
+            private final AtomicReference<Iterator<Map.Entry<K, ValueStatus>>> iteratorRef = new AtomicReference<>();
 
             @Override
             public void run() {
-                if (iterator == null || !iterator.hasNext()) {
-                    iterator = map.entrySet().iterator();
-                }
-
+                Iterator<Map.Entry<K, ValueStatus>> iterator = iteratorRef.updateAndGet(old -> old == null || !old.hasNext() ? map.entrySet().iterator() : old);
                 while (iterator.hasNext()) {
                     Map.Entry<K, ValueStatus> entry = iterator.next();
                     ValueStatus valueStatus = entry.getValue();
 
-                    if (valueStatus.mode != ValueStatus.SET) {
+                    if (!valueStatus.set) {
                         continue;
                     }
 
@@ -139,17 +129,38 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
         map.remove(entry.getKey());
     }
 
-    private class ValueStatus {
-        private static final int UPDATE = 0;
-        private static final int SET = 1;
-        private static final int NOT_HANDLED = 2;
-
+    private final class ValueStatus {
         private final V value;
-        private final int mode;
+        private final int skips;
+        private final boolean set;
 
-        private ValueStatus(V value, int mode) {
+        // Default constructor for update mode
+        private ValueStatus() {
+            this.value = null;
+            this.skips = 0;
+            this.set = false;
+        }
+
+        // Constructor for skip mode
+        private ValueStatus(int skips) {
+            this.value = null;
+            this.skips = skips;
+            this.set = false;
+        }
+
+        // Constructor for set mode
+        private ValueStatus(V value) {
             this.value = value;
-            this.mode = mode;
+            this.skips = 0;
+            this.set = true;
+        }
+
+        private boolean skip() {
+            return skips > 0;
+        }
+
+        private ValueStatus decrementSkips() {
+            return new ValueStatus(skips - 1);
         }
     }
 }

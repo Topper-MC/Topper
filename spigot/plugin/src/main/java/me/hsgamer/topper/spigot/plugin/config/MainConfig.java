@@ -49,6 +49,25 @@ public interface MainConfig {
         return 0;
     }
 
+    @ConfigPath(value = {"task", "update", "max-skips"}, priority = 5)
+    @Comment({
+            "How many times should the plugin skip updating the value for the entry if it fails to update",
+            "This is useful to let the plugin prioritize other active entries",
+    })
+    default int getTaskUpdateMaxSkips() {
+        return 1;
+    }
+
+    @ConfigPath(value = {"task", "update", "set-delay"}, priority = 5)
+    @Comment({
+            "How many ticks should the plugin wait before applying the updated value to the entry",
+            "Since the holder is updated partially, this is useful to prevent the plugin from applying the value too early",
+            "and to allow the plugin to apply the value in larger batches, creating the illusion of a single update",
+    })
+    default int getTaskUpdateSetDelay() {
+        return 0;
+    }
+
     @ConfigPath(value = "storage-type")
     @Comment({
             "The type of storage the plugin will use to store the value",

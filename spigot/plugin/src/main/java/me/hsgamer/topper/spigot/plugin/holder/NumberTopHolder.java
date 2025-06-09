@@ -71,9 +71,10 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
                 }
             });
         }
+        updateAgent.setMaxSkips(instance.get(MainConfig.class).getTaskUpdateMaxSkips());
         addEntryAgent(updateAgent);
-        addAgent(new SpigotRunnableAgent(updateAgent.getUpdateRunnable(instance.get(MainConfig.class).getTaskUpdateEntryPerTick(), 2), isAsync ? AsyncScheduler.get(instance) : GlobalScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
-        addAgent(new SpigotRunnableAgent(updateAgent.getSetRunnable(), AsyncScheduler.get(instance), 0));
+        addAgent(new SpigotRunnableAgent(updateAgent.getUpdateRunnable(instance.get(MainConfig.class).getTaskUpdateEntryPerTick()), isAsync ? AsyncScheduler.get(instance) : GlobalScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateDelay()));
+        addAgent(new SpigotRunnableAgent(updateAgent.getSetRunnable(), AsyncScheduler.get(instance), instance.get(MainConfig.class).getTaskUpdateSetDelay()));
 
         this.snapshotAgent = SnapshotAgent.create(this);
         boolean reverseOrder = Optional.ofNullable(map.get("reverse")).map(String::valueOf).map(Boolean::parseBoolean).orElse(false);

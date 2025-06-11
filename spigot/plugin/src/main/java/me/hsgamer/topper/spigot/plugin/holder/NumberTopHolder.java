@@ -56,23 +56,22 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
                 .map(String::toLowerCase)
                 .map(Boolean::parseBoolean)
                 .orElse(false);
-        boolean resetOnIgnore = Optional.ofNullable(map.get("reset-on-ignore"))
-                .map(Object::toString)
-                .map(String::toLowerCase)
-                .map(Boolean::parseBoolean)
-                .orElse(false);
         List<String> ignorePermissions = CollectionUtils.createStringListFromObject(map.get("ignore-permission"), true);
+        List<String> resetPermissions = CollectionUtils.createStringListFromObject(map.get("reset-permission"), true);
         this.updateAgent = new UpdateAgent<>(this, valueProvider);
-        if (!ignorePermissions.isEmpty()) {
+        if (!ignorePermissions.isEmpty() || !resetPermissions.isEmpty()) {
             updateAgent.setFilter(uuid -> {
                 Player player = Bukkit.getPlayer(uuid);
                 if (player == null) {
                     return UpdateAgent.FilterResult.SKIP;
                 }
-                if (ignorePermissions.stream().noneMatch(player::hasPermission)) {
-                    return UpdateAgent.FilterResult.CONTINUE;
+                if (!resetPermissions.isEmpty() && resetPermissions.stream().anyMatch(player::hasPermission)) {
+                    return UpdateAgent.FilterResult.RESET;
                 }
-                return resetOnIgnore ? UpdateAgent.FilterResult.RESET : UpdateAgent.FilterResult.SKIP;
+                if (!ignorePermissions.isEmpty() && ignorePermissions.stream().anyMatch(player::hasPermission)) {
+                    return UpdateAgent.FilterResult.SKIP;
+                }
+                return UpdateAgent.FilterResult.CONTINUE;
             });
         }
         if (showErrors) {

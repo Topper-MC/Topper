@@ -12,7 +12,7 @@ import java.util.stream.Stream;
 
 public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
     private final AtomicReference<Snapshot<K, V>> snapshot = new AtomicReference<>(new Snapshot<>());
-    private final List<Predicate<Map.Entry<K, V>>> filters = new ArrayList<>();
+    private Predicate<Map.Entry<K, V>> filter = null;
     private Comparator<V> comparator;
 
     public static <K, V> SnapshotAgent<K, V> create(DataHolder<K, V> holder) {
@@ -44,7 +44,10 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
     }
 
     public List<Map.Entry<K, V>> getUrgentSnapshot() {
-        Stream<Map.Entry<K, V>> stream = getDataStream().filter(snapshot -> filters.stream().allMatch(filter -> filter.test(snapshot)));
+        Stream<Map.Entry<K, V>> stream = getDataStream();
+        if (filter != null) {
+            stream = stream.filter(filter);
+        }
         if (comparator != null) {
             stream = stream.sorted(Map.Entry.comparingByValue(comparator));
         }
@@ -69,8 +72,13 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
         this.comparator = comparator;
     }
 
+    public void setFilter(Predicate<Map.Entry<K, V>> filter) {
+        this.filter = filter;
+    }
+
+    @Deprecated
     public void addFilter(Predicate<Map.Entry<K, V>> filter) {
-        filters.add(filter);
+        setFilter(filter);
     }
 
     private static final class Snapshot<K, V> {

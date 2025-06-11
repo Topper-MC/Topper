@@ -38,6 +38,9 @@ public final class DataEntry<K, V> {
     public void setValue(UnaryOperator<V> operator, boolean notify) {
         this.value.updateAndGet(oldValue -> {
             V newValue = operator.apply(oldValue);
+            if (newValue == null) {
+                newValue = holder.getDefaultValue();
+            }
             if (notify && !Objects.equals(oldValue, newValue)) {
                 holder.onUpdate(this, oldValue, newValue);
             }

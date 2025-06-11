@@ -56,12 +56,23 @@ public class NumberTopHolder extends AgentDataHolder<UUID, Double> {
                 .map(String::toLowerCase)
                 .map(Boolean::parseBoolean)
                 .orElse(false);
+        boolean resetOnIgnore = Optional.ofNullable(map.get("reset-on-ignore"))
+                .map(Object::toString)
+                .map(String::toLowerCase)
+                .map(Boolean::parseBoolean)
+                .orElse(false);
         List<String> ignorePermissions = CollectionUtils.createStringListFromObject(map.get("ignore-permission"), true);
         this.updateAgent = new UpdateAgent<>(this, valueProvider);
         if (!ignorePermissions.isEmpty()) {
-            updateAgent.addFilter(uuid -> {
+            updateAgent.setFilter(uuid -> {
                 Player player = Bukkit.getPlayer(uuid);
-                return player == null || ignorePermissions.stream().noneMatch(player::hasPermission);
+                if (player == null) {
+                    return UpdateAgent.FilterResult.SKIP;
+                }
+                if (ignorePermissions.stream().noneMatch(player::hasPermission)) {
+                    return UpdateAgent.FilterResult.CONTINUE;
+                }
+                return resetOnIgnore ? UpdateAgent.FilterResult.RESET : UpdateAgent.FilterResult.SKIP;
             });
         }
         if (showErrors) {

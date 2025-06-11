@@ -6,7 +6,7 @@
     <parent>
         <groupId>me.hsgamer</groupId>
         <artifactId>topper</artifactId>
-        <version>3.10.0</version>
+        <version>3.10.1</version>
     </parent>
 
     <artifactId>topper-storage</artifactId>
@@ -15,4 +15,6 @@
         <module>core</module>
         <module>simple</module>
     </modules>
+
+    <name>Topper Storage</name>
 </project>

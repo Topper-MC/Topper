@@ -6,7 +6,7 @@
     <parent>
         <groupId>me.hsgamer</groupId>
         <artifactId>topper</artifactId>
-        <version>3.10.0</version>
+        <version>3.10.1</version>
     </parent>
 
     <artifactId>topper-agent</artifactId>
@@ -19,6 +19,8 @@
         <module>core</module>
         <module>holder</module>
     </modules>
+
+    <name>Topper Agent</name>
 
     <dependencies>
         <dependency>

@@ -6,7 +6,7 @@
     <parent>
         <groupId>me.hsgamer</groupId>
         <artifactId>topper</artifactId>
-        <version>3.10.0</version>
+        <version>3.10.1</version>
     </parent>
 
     <artifactId>topper-query</artifactId>
@@ -18,4 +18,6 @@
         <module>holder</module>
         <module>forward</module>
     </modules>
+
+    <name>Topper Query</name>
 </project>

@@ -9,18 +9,22 @@ import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ValueDisplay implements SimpleQueryDisplay<UUID, Double> {
+    private static final Map<String, DateTimeFormatter> FORMATTER_MAP = new ConcurrentHashMap<>();
     private static final Pattern VALUE_PLACEHOLDER_PATTERN = Pattern.compile("\\{value(?:_(.*))?}");
     private static final String FORMAT_QUERY_DECIMAL_FORMAT_PREFIX = "decimal:";
     private static final String FORMAT_QUERY_TIME_FORMAT_PREFIX = "time:";
@@ -43,6 +47,41 @@ public class ValueDisplay implements SimpleQueryDisplay<UUID, Double> {
         this.displayNullValue = Optional.ofNullable(map.get("null-value"))
                 .map(Object::toString)
                 .orElse("---");
+    }
+
+    private static Optional<DateTimeFormatter> getFormatter(String name) {
+        if (name == null || name.isEmpty()) {
+            return Optional.empty();
+        }
+        DateTimeFormatter formatter = FORMATTER_MAP.get(name);
+        if (formatter != null) {
+            return Optional.of(formatter);
+        }
+
+        Class<DateTimeFormatter> dateTimeFormatterClass = DateTimeFormatter.class;
+        Field field;
+        try {
+            field = dateTimeFormatterClass.getDeclaredField(name);
+        } catch (NoSuchFieldException e) {
+            field = null;
+        }
+        if (field != null && Modifier.isPublic(field.getModifiers()) && Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers()) && field.getType() == DateTimeFormatter.class) {
+            try {
+                formatter = (DateTimeFormatter) field.get(null);
+                FORMATTER_MAP.put(name, formatter);
+                return Optional.of(formatter);
+            } catch (IllegalAccessException e) {
+                // Ignore and try to create a new formatter
+            }
+        }
+
+        try {
+            formatter = DateTimeFormatter.ofPattern(name);
+            FORMATTER_MAP.put(name, formatter);
+            return Optional.of(formatter);
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 
     private static Map<String, String> getSettings(String query) {
@@ -115,30 +154,30 @@ public class ValueDisplay implements SimpleQueryDisplay<UUID, Double> {
         if (formatQuery.startsWith(FORMAT_QUERY_TIME_FORMAT_PREFIX)) {
             Map<String, String> settings = getSettings(formatQuery.substring(FORMAT_QUERY_TIME_FORMAT_PREFIX.length()));
 
-            String pattern = Optional.ofNullable(settings.get("pattern")).orElse("HH:mm:ss");
-            String type = Optional.ofNullable(settings.get("type")).orElse("duration");
             long time = value.longValue();
-            String unitString = Optional.ofNullable(settings.get("unit")).orElse("seconds");
-            TimeUnit unit;
+            String unitString = Optional.ofNullable(settings.get("unit")).orElse("ticks");
+            long millis;
             if (unitString.equalsIgnoreCase("ticks")) {
-                unit = TimeUnit.MILLISECONDS;
-                time *= 50;
+                millis = time * 50;
             } else {
                 try {
-                    unit = TimeUnit.valueOf(unitString.toUpperCase());
+                    TimeUnit unit = TimeUnit.valueOf(unitString.toUpperCase());
+                    millis = unit.toMillis(time);
                 } catch (IllegalArgumentException e) {
                     return "INVALID_UNIT";
                 }
             }
-            long millis = unit.toMillis(time);
 
+            String type = Optional.ofNullable(settings.get("type")).orElse("duration");
+            Optional<String> patternOptional = Optional.ofNullable(settings.get("pattern"));
             if (type.equalsIgnoreCase("time")) {
-                DateTimeFormatter formatter;
-                try {
-                    formatter = DateTimeFormatter.ofPattern(pattern);
-                } catch (IllegalArgumentException e) {
+                String pattern = patternOptional.orElse("RFC_1123_DATE_TIME");
+                Optional<DateTimeFormatter> formatterOptional = getFormatter(pattern);
+                if (!formatterOptional.isPresent()) {
                     return "INVALID_FORMAT";
                 }
+                DateTimeFormatter formatter = formatterOptional.get();
+
                 Instant date = Instant.ofEpochMilli(millis);
                 try {
                     return formatter.format(date);
@@ -146,10 +185,19 @@ public class ValueDisplay implements SimpleQueryDisplay<UUID, Double> {
                     return "CANNOT_FORMAT";
                 }
             } else if (type.equalsIgnoreCase("duration")) {
-                try {
-                    return DurationFormatUtils.formatDuration(millis, pattern);
-                } catch (IllegalArgumentException e) {
-                    return "INVALID_FORMAT";
+                String pattern = patternOptional.orElse("default");
+                if (pattern.equalsIgnoreCase("default")) {
+                    return DurationFormatUtils.formatDuration(millis, "HH:mm:ss");
+                } else if (pattern.equalsIgnoreCase("word")) {
+                    return DurationFormatUtils.formatDurationWords(millis, true, true);
+                } else if (pattern.equalsIgnoreCase("short")) {
+                    return DurationFormatUtils.formatDuration(millis, "H:mm:ss");
+                } else {
+                    try {
+                        return DurationFormatUtils.formatDuration(millis, pattern);
+                    } catch (IllegalArgumentException e) {
+                        return "INVALID_FORMAT";
+                    }
                 }
             }
         }

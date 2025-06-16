@@ -192,6 +192,8 @@ public class ValueDisplay implements SimpleQueryDisplay<UUID, Double> {
                     return DurationFormatUtils.formatDurationWords(millis, true, true);
                 } else if (pattern.equalsIgnoreCase("short")) {
                     return DurationFormatUtils.formatDuration(millis, "H:mm:ss");
+                } else if (pattern.equalsIgnoreCase("short-word")) {
+                    return DurationFormatUtils.formatDuration(millis, "d'd 'H'h 'm'm 's's'");
                 } else {
                     try {
                         return DurationFormatUtils.formatDuration(millis, pattern);

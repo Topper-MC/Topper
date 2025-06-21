@@ -13,7 +13,6 @@
         <module>storage</module>
         <module>agent</module>
         <module>query</module>
-        <module>spigot</module>
         <module>value</module>
     </modules>
 
@@ -99,18 +98,6 @@
     </build>
 
     <repositories>
-        <repository>
-            <id>spigotmc-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-        </repository>
-        <repository>
-            <id>sonatype</id>
-            <url>https://oss.sonatype.org/content/groups/public/</url>
-        </repository>
-        <repository>
-            <id>codemc-repo</id>
-            <url>https://repo.codemc.io/repository/maven-public/</url>
-        </repository>
         <repository>
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>

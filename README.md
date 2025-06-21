@@ -1,3 +1,3 @@
 # Topper
 
-A project / framework to handle single-value data tables.
+A framework to handle single-value data tables.

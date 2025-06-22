@@ -73,32 +73,33 @@ public class FlatStorageSupplier implements DataStorageSupplier {
             @Override
             public Optional<Modifier<K, V>> modify() {
                 return Optional.of(new Modifier<K, V>() {
-                    private final Map<K, V> map = new HashMap<>();
-                    private final Set<K> removeSet = new HashSet<>();
+                    private final List<Runnable> runnables = new LinkedList<>();
 
                     @Override
                     public void save(Map<K, V> map) {
-                        this.map.putAll(map);
-                        this.removeSet.removeIf(this.map::containsKey);
+                        if (map.isEmpty()) {
+                            return;
+                        }
+                        runnables.add(() -> map.forEach((k, v) -> properties.put(keyConverter.toRawString(k), valueConverter.toRawString(v))));
                     }
 
                     @Override
                     public void remove(Collection<K> keys) {
-                        this.removeSet.addAll(keys);
-                        this.removeSet.forEach(map::remove);
+                        if (keys.isEmpty()) {
+                            return;
+                        }
+                        runnables.add(() -> keys.forEach(key -> properties.remove(keyConverter.toRawString(key))));
                     }
 
                     @Override
                     public void commit() {
-                        map.forEach((k, v) -> properties.put(keyConverter.toRawString(k), valueConverter.toRawString(v)));
-                        removeSet.forEach(key -> properties.remove(keyConverter.toRawString(key)));
+                        runnables.forEach(Runnable::run);
                         saveRunnable.run();
                     }
 
                     @Override
                     public void rollback() {
-                        map.clear();
-                        removeSet.clear();
+                        runnables.clear();
                     }
                 });
             }

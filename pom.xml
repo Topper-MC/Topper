@@ -17,7 +17,7 @@
     </modules>
 
     <name>Topper</name>
-    <description>A project / framework to handle single-value data tables</description>
+    <description>A framework to handle single-value data tables</description>
     <url>https://github.com/Topper-MC/Topper</url>
 
     <licenses>

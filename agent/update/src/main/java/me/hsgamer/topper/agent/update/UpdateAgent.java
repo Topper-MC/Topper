@@ -7,6 +7,7 @@ import me.hsgamer.topper.value.core.ValueWrapper;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,8 +49,13 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
             public void run() {
                 Iterator<Map.Entry<K, UpdateStatus>> iterator = iteratorRef.updateAndGet(old -> old == null || !old.hasNext() ? map.entrySet().iterator() : old);
                 int count = 0;
-                while (iterator.hasNext() && count < maxEntryPerCall) {
-                    Map.Entry<K, UpdateStatus> entry = iterator.next();
+                while (count < maxEntryPerCall) {
+                    Map.Entry<K, UpdateStatus> entry;
+                    try {
+                        entry = iterator.next();
+                    } catch (NoSuchElementException e) {
+                        break;
+                    }
                     K key = entry.getKey();
                     UpdateStatus updateStatus = entry.getValue();
 
@@ -102,8 +108,13 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
             @Override
             public void run() {
                 Iterator<Map.Entry<K, UpdateStatus>> iterator = iteratorRef.updateAndGet(old -> old == null || !old.hasNext() ? map.entrySet().iterator() : old);
-                while (iterator.hasNext()) {
-                    Map.Entry<K, UpdateStatus> entry = iterator.next();
+                while (true) {
+                    Map.Entry<K, UpdateStatus> entry;
+                    try {
+                        entry = iterator.next();
+                    } catch (NoSuchElementException e) {
+                        break;
+                    }
                     UpdateStatus updateStatus = entry.getValue();
 
                     if (updateStatus != UpdateStatus.RESET && !(updateStatus instanceof UpdateStatus.Set)) {

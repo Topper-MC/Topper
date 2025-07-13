@@ -56,24 +56,29 @@ public class NumberConverter<T extends Number> implements ValueConverter<T> {
     }
 
     @Override
-    public String[] getSqlColumns() {
-        return new String[]{valueName};
-    }
+    public @NotNull SqlValueConverter<T> getSqlValueConverter(String driverType) {
+        return new SqlValueConverter<T>() {
+            @Override
+            public String[] getSqlColumns() {
+                return new String[]{valueName};
+            }
 
-    @Override
-    public String[] getSqlColumnDefinitions() {
-        String columnType = isDoubleValue ? "DOUBLE" : "BIGINT";
-        return new String[]{columnType + " NOT NULL"};
-    }
+            @Override
+            public String[] getSqlColumnDefinitions() {
+                String columnType = isDoubleValue ? "DOUBLE" : "BIGINT";
+                return new String[]{columnType + " NOT NULL"};
+            }
 
-    @Override
-    public Object[] toSqlValues(@NotNull Number value) {
-        return new Object[]{value};
-    }
+            @Override
+            public Object[] toSqlValues(@NotNull Number value) {
+                return new Object[]{value};
+            }
 
-    @Override
-    public @Nullable T fromSqlResultSet(@NotNull ResultSet resultSet) throws SQLException {
-        Number number = isDoubleValue ? resultSet.getDouble(valueName) : resultSet.getLong(valueName);
-        return numberFunction.apply(number);
+            @Override
+            public @NotNull T fromSqlResultSet(@NotNull ResultSet resultSet) throws SQLException {
+                Number number = isDoubleValue ? resultSet.getDouble(valueName) : resultSet.getLong(valueName);
+                return numberFunction.apply(number);
+            }
+        };
     }
 }

@@ -15,24 +15,11 @@ public final class ComplexValueConverter<T> implements ValueConverter<T> {
     private final String stringSeparator;
     private final List<Entry<T>> entries;
     private final Supplier<T> constructor;
-    private final String[] sqlColumns;
-    private final String[] sqlColumnDefinitions;
 
     private ComplexValueConverter(String stringSeparator, List<Entry<T>> entries, Supplier<T> constructor) {
         this.stringSeparator = stringSeparator;
         this.entries = Collections.unmodifiableList(entries);
         this.constructor = constructor;
-
-        List<String> sqlColumns = new ArrayList<>();
-        List<String> sqlColumnDefinitions = new ArrayList<>();
-        for (Entry<T> entry : entries) {
-            String[] columns = entry.converter.getSqlColumns();
-            String[] columnDefinitions = entry.converter.getSqlColumnDefinitions();
-            sqlColumns.addAll(Arrays.asList(columns));
-            sqlColumnDefinitions.addAll(Arrays.asList(columnDefinitions));
-        }
-        this.sqlColumns = sqlColumns.toArray(new String[0]);
-        this.sqlColumnDefinitions = sqlColumnDefinitions.toArray(new String[0]);
     }
 
     public static <T> Builder<T> builder() {
@@ -90,36 +77,57 @@ public final class ComplexValueConverter<T> implements ValueConverter<T> {
     }
 
     @Override
-    public String[] getSqlColumns() {
-        return sqlColumns;
-    }
-
-    @Override
-    public String[] getSqlColumnDefinitions() {
-        return sqlColumnDefinitions;
-    }
-
-    @Override
-    public Object[] toSqlValues(@NotNull T value) {
-        List<Object> values = new ArrayList<>();
+    public @NotNull SqlValueConverter<T> getSqlValueConverter(String driverType) {
+        List<SqlValueConverter<Object>> sqlValueConverters = new ArrayList<>();
+        List<String> sqlColumnList = new ArrayList<>();
+        List<String> sqlColumnDefinitionList = new ArrayList<>();
         for (Entry<T> entry : entries) {
-            Object[] objectValues = entry.converter.toSqlValues(entry.getter.apply(value));
-            values.addAll(Arrays.asList(objectValues));
+            SqlValueConverter<Object> sqlValueConverter = entry.converter.getSqlValueConverter(driverType);
+            sqlValueConverters.add(sqlValueConverter);
+
+            String[] columns = sqlValueConverter.getSqlColumns();
+            String[] columnDefinitions = sqlValueConverter.getSqlColumnDefinitions();
+            sqlColumnList.addAll(Arrays.asList(columns));
+            sqlColumnDefinitionList.addAll(Arrays.asList(columnDefinitions));
         }
-        return values.toArray(new Object[0]);
-    }
+        String[] sqlColumns = sqlColumnList.toArray(new String[0]);
+        String[] sqlColumnDefinitions = sqlColumnDefinitionList.toArray(new String[0]);
 
-    @Override
-    public @Nullable T fromSqlResultSet(@NotNull ResultSet resultSet) throws SQLException {
-        T instance = constructor.get();
-        for (Entry<T> entry : entries) {
-            Object objectValue = entry.converter.fromSqlResultSet(resultSet);
-            if (objectValue == null) {
-                return null;
+        return new SqlValueConverter<T>() {
+            @Override
+            public String[] getSqlColumns() {
+                return sqlColumns;
             }
-            instance = entry.setter.apply(instance, objectValue);
-        }
-        return instance;
+
+            @Override
+            public String[] getSqlColumnDefinitions() {
+                return sqlColumnDefinitions;
+            }
+
+            @Override
+            public Object[] toSqlValues(@NotNull T value) {
+                List<Object> values = new ArrayList<>();
+                for (SqlValueConverter<Object> sqlValueConverter : sqlValueConverters) {
+                    Object[] objectValues = sqlValueConverter.toSqlValues(value);
+                    values.addAll(Arrays.asList(objectValues));
+                }
+                return values.toArray(new Object[0]);
+            }
+
+            @Override
+            public @Nullable T fromSqlResultSet(@NotNull ResultSet resultSet) throws SQLException {
+                T instance = constructor.get();
+                for (int i = 0; i < sqlValueConverters.size(); i++) {
+                    SqlValueConverter<Object> sqlValueConverter = sqlValueConverters.get(i);
+                    Object objectValue = sqlValueConverter.fromSqlResultSet(resultSet);
+                    if (objectValue == null) {
+                        return null;
+                    }
+                    instance = entries.get(i).setter.apply(instance, objectValue);
+                }
+                return instance;
+            }
+        };
     }
 
     private static class Entry<T> {

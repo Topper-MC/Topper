@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.function.Function;
 
 public class MySqlStorageSupplier extends SqlStorageSupplier {
+    public static final String NAME = "mysql";
+
     public MySqlStorageSupplier(DatabaseSetting databaseSetting, Function<Setting, SqlClient<?>> clientFunction) {
         super(new MySqlDriver(), databaseSetting, clientFunction);
     }
@@ -56,5 +58,10 @@ public class MySqlStorageSupplier extends SqlStorageSupplier {
         System.arraycopy(keys, 0, queryValues, 0, keys.length);
         System.arraycopy(values, 0, queryValues, keys.length, values.length);
         return Collections.singletonList(queryValues);
+    }
+
+    @Override
+    protected String getDriverName() {
+        return NAME;
     }
 }

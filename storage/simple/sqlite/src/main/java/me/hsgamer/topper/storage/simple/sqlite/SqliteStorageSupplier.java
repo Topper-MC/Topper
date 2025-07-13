@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.function.Function;
 
 public class SqliteStorageSupplier extends SqlStorageSupplier {
+    public static final String NAME = "sqlite";
+
     public SqliteStorageSupplier(File baseHolder, DatabaseSetting databaseSetting, Function<Setting, SqlClient<?>> clientFunction) {
         super(new SqliteFileDriver(baseHolder), databaseSetting, clientFunction);
     }
@@ -85,5 +87,10 @@ public class SqliteStorageSupplier extends SqlStorageSupplier {
                 insertValues,
                 updateValues
         );
+    }
+
+    @Override
+    protected String getDriverName() {
+        return NAME;
     }
 }

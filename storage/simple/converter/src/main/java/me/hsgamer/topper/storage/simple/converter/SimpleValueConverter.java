@@ -55,23 +55,28 @@ public class SimpleValueConverter<T> implements ValueConverter<T> {
     }
 
     @Override
-    public String[] getSqlColumns() {
-        return new String[]{valueName};
-    }
+    public @NotNull SqlValueConverter<T> getSqlValueConverter(String driverType) {
+        return new SqlValueConverter<T>() {
+            @Override
+            public String[] getSqlColumns() {
+                return new String[]{valueName};
+            }
 
-    @Override
-    public String[] getSqlColumnDefinitions() {
-        return new String[]{sqlType + " NOT NULL"};
-    }
+            @Override
+            public String[] getSqlColumnDefinitions() {
+                return new String[]{sqlType + " NOT NULL"};
+            }
 
-    @Override
-    public Object[] toSqlValues(@NotNull T value) {
-        return new Object[]{toRawString(value)};
-    }
+            @Override
+            public Object[] toSqlValues(@NotNull T value) {
+                return new Object[]{toRawString(value)};
+            }
 
-    @Override
-    public @Nullable T fromSqlResultSet(@NotNull ResultSet resultSet) throws SQLException {
-        String value = isStringNationalized ? resultSet.getNString(valueName) : resultSet.getString(valueName);
-        return value == null ? null : fromRawString(value);
+            @Override
+            public @Nullable T fromSqlResultSet(@NotNull ResultSet resultSet) throws SQLException {
+                String value = isStringNationalized ? resultSet.getNString(valueName) : resultSet.getString(valueName);
+                return value == null ? null : fromRawString(value);
+            }
+        };
     }
 }

@@ -1,7 +1,7 @@
 package me.hsgamer.topper.query.holder;
 
-import me.hsgamer.topper.core.DataEntry;
-import me.hsgamer.topper.core.DataHolder;
+import me.hsgamer.topper.data.core.DataEntry;
+import me.hsgamer.topper.data.core.DataHolder;
 import me.hsgamer.topper.query.simple.SimpleQuery;
 import me.hsgamer.topper.query.simple.SimpleQueryContext;
 import me.hsgamer.topper.query.simple.SimpleQueryDisplay;

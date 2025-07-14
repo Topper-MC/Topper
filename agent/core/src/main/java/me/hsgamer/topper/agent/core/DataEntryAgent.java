@@ -1,6 +1,6 @@
 package me.hsgamer.topper.agent.core;
 
-import me.hsgamer.topper.core.DataEntry;
+import me.hsgamer.topper.data.core.DataEntry;
 
 public interface DataEntryAgent<K, V> {
     default void onCreate(DataEntry<K, V> entry) {

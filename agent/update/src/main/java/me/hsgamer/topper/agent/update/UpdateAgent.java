@@ -1,8 +1,8 @@
 package me.hsgamer.topper.agent.update;
 
 import me.hsgamer.topper.agent.core.DataEntryAgent;
-import me.hsgamer.topper.core.DataEntry;
-import me.hsgamer.topper.core.DataHolder;
+import me.hsgamer.topper.data.core.DataEntry;
+import me.hsgamer.topper.data.core.DataHolder;
 import me.hsgamer.topper.value.core.ValueWrapper;
 
 import java.util.Iterator;

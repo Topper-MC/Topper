@@ -18,7 +18,7 @@
         </dependency>
         <dependency>
             <groupId>me.hsgamer</groupId>
-            <artifactId>topper-core</artifactId>
+            <artifactId>topper-data-core</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

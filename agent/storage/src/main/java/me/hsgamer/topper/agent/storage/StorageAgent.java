@@ -5,8 +5,8 @@ import me.hsgamer.hscore.logger.common.Logger;
 import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.agent.core.Agent;
 import me.hsgamer.topper.agent.core.DataEntryAgent;
-import me.hsgamer.topper.core.DataEntry;
-import me.hsgamer.topper.core.DataHolder;
+import me.hsgamer.topper.data.core.DataEntry;
+import me.hsgamer.topper.data.core.DataHolder;
 import me.hsgamer.topper.storage.core.DataStorage;
 import org.jetbrains.annotations.Nullable;
 

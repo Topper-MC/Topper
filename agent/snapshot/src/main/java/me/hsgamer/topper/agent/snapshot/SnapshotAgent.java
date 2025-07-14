@@ -1,7 +1,7 @@
 package me.hsgamer.topper.agent.snapshot;
 
 import me.hsgamer.topper.agent.core.Agent;
-import me.hsgamer.topper.core.DataHolder;
+import me.hsgamer.topper.data.core.DataHolder;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;

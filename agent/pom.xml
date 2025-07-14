@@ -17,7 +17,6 @@
         <module>update</module>
         <module>runnable</module>
         <module>core</module>
-        <module>holder</module>
     </modules>
 
     <name>Topper Agent</name>
@@ -25,7 +24,7 @@
     <dependencies>
         <dependency>
             <groupId>me.hsgamer</groupId>
-            <artifactId>topper-core</artifactId>
+            <artifactId>topper-data-core</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

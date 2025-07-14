@@ -17,15 +17,6 @@ public class SimpleDataHolder<K, V> implements DataHolder<K, V> {
         this.name = name;
     }
 
-    protected void onCreate(DataEntry<K, V> entry) {
-    }
-
-    protected void onRemove(DataEntry<K, V> entry) {
-    }
-
-    protected void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
-    }
-
     @Override
     public String getName() {
         return name;

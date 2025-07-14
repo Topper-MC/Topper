@@ -19,4 +19,13 @@ public interface DataHolder<K, V> {
     Map<K, DataEntry<K, V>> getEntryMap();
 
     void clear();
+
+    default void onCreate(DataEntry<K, V> entry) {
+    }
+
+    default void onRemove(DataEntry<K, V> entry) {
+    }
+
+    default void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
+    }
 }

@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuery.Context<K, V>> {
-    protected SnapshotQuery() {
-        registerAction("top_name", (actor, context) -> {
+    protected SnapshotQuery(String prefix) {
+        registerAction(prefix + "_name", (actor, context) -> {
             int i = 1;
             try {
                 i = Integer.parseInt(context.parent.args);
@@ -21,7 +21,7 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
             K key = context.agent.getSnapshotByIndex(i - 1).map(Map.Entry::getKey).orElse(null);
             return context.display.getDisplayName(key);
         });
-        registerAction("top_key", (actor, context) -> {
+        registerAction(prefix + "_key", (actor, context) -> {
             int i = 1;
             try {
                 i = Integer.parseInt(context.parent.args);
@@ -31,7 +31,7 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
             K key = context.agent.getSnapshotByIndex(i - 1).map(Map.Entry::getKey).orElse(null);
             return context.display.getDisplayKey(key);
         });
-        registerAction("top_value", (actor, context) -> {
+        registerAction(prefix + "_value", (actor, context) -> {
             String[] split = context.parent.args.split(";", 2);
             int i = 1;
             try {
@@ -45,7 +45,7 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
             V value = context.agent.getSnapshotByIndex(i - 1).map(Map.Entry::getValue).orElse(null);
             return context.display.getDisplayValue(value, valueArgs);
         });
-        registerAction("top_value_raw", (actor, context) -> {
+        registerAction(prefix + "_value_raw", (actor, context) -> {
             int i = 1;
             try {
                 i = Integer.parseInt(context.parent.args);
@@ -55,14 +55,18 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
             V value = context.agent.getSnapshotByIndex(i - 1).map(Map.Entry::getValue).orElse(null);
             return context.display.getDisplayValue(value, "raw");
         });
-        registerActorAction("top_rank", (actor, context) ->
+        registerActorAction(prefix + "_rank", (actor, context) ->
                 getKey(actor, context)
                         .map(context.agent::getSnapshotIndex)
                         .map(index -> index + 1)
                         .map(rank -> getDisplayRank(rank, context))
                         .orElse("0"));
-        registerAction("top_size", (actor, context) ->
+        registerAction(prefix + "_size", (actor, context) ->
                 Integer.toString(context.agent.getSnapshot().size()));
+    }
+
+    protected SnapshotQuery() {
+        this("top");
     }
 
     protected abstract Optional<SnapshotAgent<K, V>> getAgent(@NotNull String name);

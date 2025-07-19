@@ -20,18 +20,16 @@ import java.util.stream.Collectors;
 public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable {
     private static final Logger LOGGER = LoggerProvider.getLogger(StorageAgent.class);
 
-    private final DataHolder<K, V> holder;
     private final DataStorage<K, V> storage;
     private final Queue<Map.Entry<K, ValueWrapper<V>>> queue = new ConcurrentLinkedQueue<>(); // Value can be null representing removal
     private final AtomicReference<Map<K, ValueWrapper<V>>> storeMap = new AtomicReference<>(new ConcurrentHashMap<>());
     private final AtomicReference<Map<K, ValueWrapper<V>>> savingMap = new AtomicReference<>();
     private final AtomicBoolean saving = new AtomicBoolean(false);
     private int maxEntryPerCall = 10;
-    private boolean lazyLoad = false;
+    private boolean loadOnCreate = false;
     private boolean scheduleOnEntryRemove = true;
 
-    public StorageAgent(DataHolder<K, V> holder, DataStorage<K, V> storage) {
-        this.holder = holder;
+    public StorageAgent(DataStorage<K, V> storage) {
         this.storage = storage;
     }
 
@@ -65,7 +63,7 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
                 .stream()
                 .filter(entry -> {
                     V value = entry.getValue().value;
-                    if (value == null || Objects.equals(value, holder.getDefaultValue())) {
+                    if (value == null) {
                         removeKeys.add(entry.getKey());
                         return false;
                     }
@@ -89,7 +87,7 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
             modifier.commit();
             savingMap.set(null);
         } catch (Throwable t) {
-            LOGGER.log(LogLevel.ERROR, "Failed to save entries for " + holder.getName(), t);
+            LOGGER.log(LogLevel.ERROR, "Failed to save entries", t);
             modifier.rollback();
         } finally {
             saving.set(false);
@@ -103,13 +101,6 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
     @Override
     public void start() {
         storage.onRegister();
-        if (!lazyLoad) {
-            try {
-                storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
-            } catch (Exception e) {
-                LOGGER.log(LogLevel.ERROR, "Failed to load top entries for " + holder.getName(), e);
-            }
-        }
     }
 
     @Override
@@ -124,14 +115,14 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
 
     @Override
     public void onCreate(DataEntry<K, V> entry) {
-        if (lazyLoad) {
+        if (loadOnCreate) {
             storage.load(entry.getKey()).ifPresent(value -> entry.setValue(value, false));
         }
     }
 
     @Override
     public void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
-        scheduleValue(entry.getKey(), newValue);
+        scheduleValue(entry.getKey(), Objects.equals(newValue, entry.getHolder().getDefaultValue()) ? null : newValue);
     }
 
     @Override
@@ -154,12 +145,25 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
         this.maxEntryPerCall = taskSaveEntryPerTick;
     }
 
-    public void setLazyLoad(boolean lazyLoad) {
-        this.lazyLoad = lazyLoad;
+    public void setLoadOnCreate(boolean loadOnCreate) {
+        this.loadOnCreate = loadOnCreate;
     }
 
     public void setScheduleOnEntryRemove(boolean scheduleOnEntryRemove) {
         this.scheduleOnEntryRemove = scheduleOnEntryRemove;
+    }
+
+    public Agent getLoadAgent(DataHolder<K, V> holder) {
+        return new Agent() {
+            @Override
+            public void start() {
+                try {
+                    storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
+                } catch (Exception e) {
+                    LOGGER.log(LogLevel.ERROR, "Failed to load top entries for " + holder.getName(), e);
+                }
+            }
+        };
     }
 
     private static final class ValueWrapper<V> {

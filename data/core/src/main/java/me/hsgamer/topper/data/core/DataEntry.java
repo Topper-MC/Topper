@@ -7,19 +7,19 @@ public interface DataEntry<K, V> {
 
     V getValue();
 
-    default void setValue(UnaryOperator<V> operator) {
-        setValue(operator, true);
-    }
-
-    default void setValue(V value) {
-        setValue(value, true);
-    }
-
     void setValue(UnaryOperator<V> operator, boolean notify);
 
     DataHolder<K, V> getHolder();
 
     default void setValue(V value, boolean notify) {
         setValue(v -> value, notify);
+    }
+
+    default void setValue(UnaryOperator<V> operator) {
+        setValue(operator, true);
+    }
+
+    default void setValue(V value) {
+        setValue(value, true);
     }
 }

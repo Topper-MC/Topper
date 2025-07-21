@@ -27,7 +27,7 @@ public interface ValueProvider<K, V> extends Function<K, ValueWrapper<V>> {
     @Override
     @NotNull ValueWrapper<V> apply(@NotNull K key);
 
-    default <RK> ValueProvider<RK, V> keyMapper(Function<@NotNull RK, @Nullable K> mapper) {
+    default <RK> ValueProvider<RK, V> beforeApply(Function<@NotNull RK, @Nullable K> mapper) {
         return rawKey -> {
             try {
                 K key = mapper.apply(rawKey);

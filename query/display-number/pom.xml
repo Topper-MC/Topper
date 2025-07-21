@@ -5,20 +5,18 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>me.hsgamer</groupId>
-        <artifactId>topper</artifactId>
+        <artifactId>topper-query</artifactId>
         <version>4.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>topper-query</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>core</module>
-        <module>simple</module>
-        <module>snapshot</module>
-        <module>holder</module>
-        <module>forward</module>
-        <module>display-number</module>
-    </modules>
+    <artifactId>topper-query-display-number</artifactId>
+    <name>Topper Query Display Number</name>
 
-    <name>Topper Query</name>
+    <dependencies>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
+            <artifactId>topper-query-simple</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>

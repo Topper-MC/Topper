@@ -88,7 +88,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                             .filter(entry -> entry.getKey() != null && entry.getValue() != null)
                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                 } catch (SQLException e) {
-                    logger.log(LogLevel.ERROR, "Failed to load top holder", e);
+                    logger.log(LogLevel.ERROR, "Failed to load holder", e);
                     return Collections.emptyMap();
                 } finally {
                     unlock();
@@ -121,7 +121,7 @@ public abstract class SqlStorageSupplier implements DataStorageSupplier {
                                     : Optional.empty()
                             );
                 } catch (SQLException e) {
-                    logger.log(LogLevel.ERROR, "Failed to load top holder", e);
+                    logger.log(LogLevel.ERROR, "Failed to load holder", e);
                     return Optional.empty();
                 } finally {
                     unlock();

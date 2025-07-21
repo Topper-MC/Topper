@@ -6,8 +6,6 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface DataHolder<K, V> {
-    String getName();
-
     @Nullable V getDefaultValue();
 
     DataEntry<K, V> getOrCreateEntry(K key);

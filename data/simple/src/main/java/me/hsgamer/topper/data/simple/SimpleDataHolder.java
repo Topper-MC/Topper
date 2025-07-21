@@ -11,16 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SimpleDataHolder<K, V> implements DataHolder<K, V> {
     private final Map<K, DataEntry<K, V>> entryMap = new ConcurrentHashMap<>();
-    private final String name;
-
-    public SimpleDataHolder(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public String getName() {
-        return name;
-    }
 
     @Override
     public @Nullable V getDefaultValue() {

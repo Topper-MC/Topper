@@ -160,7 +160,7 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
                 try {
                     storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
                 } catch (Exception e) {
-                    LOGGER.log(LogLevel.ERROR, "Failed to load top entries for " + holder.getName(), e);
+                    LOGGER.log(LogLevel.ERROR, "Failed to load entries", e);
                 }
             }
         };

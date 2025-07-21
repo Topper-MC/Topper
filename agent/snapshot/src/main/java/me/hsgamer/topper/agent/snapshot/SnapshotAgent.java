@@ -76,11 +76,6 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
         this.filter = filter;
     }
 
-    @Deprecated
-    public void addFilter(Predicate<Map.Entry<K, V>> filter) {
-        setFilter(filter);
-    }
-
     private static final class Snapshot<K, V> {
         private final List<Map.Entry<K, V>> entryList;
         private final Map<K, Integer> indexMap;

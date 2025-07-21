@@ -40,7 +40,6 @@ public interface AgentHolder<K, V> extends DataHolder<K, V> {
 
         List<DataEntryAgent<K, V>> entryAgentList = getEntryAgents();
         getEntryMap().values().forEach(entry -> entryAgentList.forEach(agent -> agent.onUnregister(entry)));
-        clear();
 
         reverseRunnable.accept(Agent::stop);
     }

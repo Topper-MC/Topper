@@ -12,11 +12,10 @@
     <artifactId>topper-agent</artifactId>
     <packaging>pom</packaging>
     <modules>
+        <module>core</module>
         <module>storage</module>
         <module>snapshot</module>
         <module>update</module>
-        <module>runnable</module>
-        <module>core</module>
     </modules>
 
     <name>Topper Agent</name>

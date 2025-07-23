@@ -1,10 +1,11 @@
 package me.hsgamer.topper.query.display.number;
 
 import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
+import me.hsgamer.topper.value.timeformat.DateTimeFormatters;
+import me.hsgamer.topper.value.timeformat.DurationTimeFormatters;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Method;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -20,34 +21,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryDisplay<K, V> {
-    private static final Method FORMAT_DURATION_METHOD;
     private static final Pattern VALUE_PLACEHOLDER_PATTERN = Pattern.compile("\\{value(?:_(.*))?}");
     private static final String FORMAT_QUERY_DECIMAL_FORMAT_PREFIX = "decimal:";
     private static final String FORMAT_QUERY_TIME_FORMAT_PREFIX = "time:";
-
-    static {
-        Class<?> clazz;
-        try {
-            clazz = Class.forName("org.apache.commons.lang3.time.DurationFormatUtils");
-        } catch (ClassNotFoundException e) {
-            try {
-                clazz = Class.forName("org.apache.commons.lang.time.DurationFormatUtils");
-            } catch (ClassNotFoundException ex) {
-                clazz = null;
-            }
-        }
-
-        Method method = null;
-        if (clazz != null) {
-            try {
-                method = clazz.getMethod("formatDuration", long.class, String.class);
-            } catch (NoSuchMethodException e) {
-                // Method not found, will return null
-            }
-        }
-
-        FORMAT_DURATION_METHOD = method;
-    }
 
     private final String line;
     private final String displayNullValue;
@@ -129,30 +105,30 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
         if (formatQuery.startsWith(FORMAT_QUERY_TIME_FORMAT_PREFIX)) {
             Map<String, String> settings = getSettings(formatQuery.substring(FORMAT_QUERY_TIME_FORMAT_PREFIX.length()));
 
-            String pattern = Optional.ofNullable(settings.get("pattern")).orElse("HH:mm:ss");
-            String type = Optional.ofNullable(settings.get("type")).orElse("duration");
             long time = value.longValue();
-            String unitString = Optional.ofNullable(settings.get("unit")).orElse("seconds");
-            TimeUnit unit;
+            String unitString = Optional.ofNullable(settings.get("unit")).orElse("ticks");
+            long millis;
             if (unitString.equalsIgnoreCase("ticks")) {
-                unit = TimeUnit.MILLISECONDS;
-                time *= 50;
+                millis = time * 50;
             } else {
                 try {
-                    unit = TimeUnit.valueOf(unitString.toUpperCase());
+                    TimeUnit unit = TimeUnit.valueOf(unitString.toUpperCase());
+                    millis = unit.toMillis(time);
                 } catch (IllegalArgumentException e) {
                     return "INVALID_UNIT";
                 }
             }
-            long millis = unit.toMillis(time);
 
+            String type = Optional.ofNullable(settings.get("type")).orElse("duration");
+            Optional<String> patternOptional = Optional.ofNullable(settings.get("pattern"));
             if (type.equalsIgnoreCase("time")) {
-                DateTimeFormatter formatter;
-                try {
-                    formatter = DateTimeFormatter.ofPattern(pattern);
-                } catch (IllegalArgumentException e) {
+                String pattern = patternOptional.orElse("RFC_1123_DATE_TIME");
+                Optional<DateTimeFormatter> formatterOptional = DateTimeFormatters.getFormatter(pattern);
+                if (!formatterOptional.isPresent()) {
                     return "INVALID_FORMAT";
                 }
+                DateTimeFormatter formatter = formatterOptional.get();
+
                 Instant date = Instant.ofEpochMilli(millis);
                 try {
                     return formatter.format(date);
@@ -160,13 +136,17 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                     return "CANNOT_FORMAT";
                 }
             } else if (type.equalsIgnoreCase("duration")) {
-                if (FORMAT_DURATION_METHOD == null) {
-                    return "UNSUPPORTED_DURATION_FORMAT";
-                }
-                try {
-                    return (String) FORMAT_DURATION_METHOD.invoke(null, millis, pattern);
-                } catch (Exception e) {
-                    return "CANNOT_FORMAT";
+                String pattern = patternOptional.orElse("default");
+                if (pattern.equalsIgnoreCase("default")) {
+                    return DurationTimeFormatters.formatDuration(millis, "HH:mm:ss");
+                } else if (pattern.equalsIgnoreCase("word")) {
+                    return DurationTimeFormatters.formatDurationWords(millis, true, true);
+                } else if (pattern.equalsIgnoreCase("short")) {
+                    return DurationTimeFormatters.formatDuration(millis, "H:mm:ss");
+                } else if (pattern.equalsIgnoreCase("short-word")) {
+                    return DurationTimeFormatters.formatDuration(millis, "d'd 'H'h 'm'm 's's'");
+                } else {
+                    return DurationTimeFormatters.formatDuration(millis, pattern);
                 }
             }
         }

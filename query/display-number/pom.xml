@@ -18,5 +18,10 @@
             <artifactId>topper-query-simple</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
+            <artifactId>topper-value-time-format</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>

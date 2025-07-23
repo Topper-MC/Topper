@@ -16,6 +16,13 @@ public class StringDeformatters {
         return new NumberStringDeformatter(decimalSeparator);
     }
 
+    public static TimeStringDeformatter timeStringDeformatter(Map<String, Object> map) {
+        String timeFormat = Optional.ofNullable(map.get("time-format"))
+                .map(Object::toString)
+                .orElse("HH:mm:ss");
+        return new TimeStringDeformatter(timeFormat);
+    }
+
     public static UnaryOperator<String> deformatterOrIdentity(Map<String, Object> map) {
         boolean needDeformat = Optional.ofNullable(map.get("formatted"))
                 .map(Object::toString)
@@ -51,6 +58,8 @@ public class StringDeformatters {
         switch (type) {
             case NUMBER:
                 return numberStringDeformatter(deformatterMap);
+            case TIME:
+                return timeStringDeformatter(deformatterMap);
             default:
                 return UnaryOperator.identity();
         }
@@ -59,6 +68,5 @@ public class StringDeformatters {
     private enum Type {
         NUMBER,
         TIME,
-        DURATION,
     }
 }

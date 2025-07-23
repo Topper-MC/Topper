@@ -5,17 +5,10 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>me.hsgamer</groupId>
-        <artifactId>topper</artifactId>
+        <artifactId>topper-value</artifactId>
         <version>4.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>topper-value</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>core</module>
-        <module>string</module>
-        <module>time-format</module>
-    </modules>
-
-    <name>Topper Value</name>
+    <artifactId>topper-value-time-format</artifactId>
+    <name>Topper Value Time Format</name>
 </project>

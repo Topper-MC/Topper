@@ -28,7 +28,7 @@ public class SimpleDataHolder<K, V> implements DataHolder<K, V> {
 
     @Override
     public Optional<DataEntry<K, V>> getEntry(K key) {
-        return Optional.empty();
+        return Optional.ofNullable(entryMap.get(key));
     }
 
     @Override

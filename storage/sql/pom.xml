@@ -16,6 +16,7 @@
         <module>mysql</module>
         <module>config</module>
         <module>sqlite</module>
+        <module>converter</module>
     </modules>
 
     <name>Topper Storage SQL</name>

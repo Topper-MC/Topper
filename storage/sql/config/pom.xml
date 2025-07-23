@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>topper-storage-sql-config</artifactId>
+    <name>Topper Storage SQL Config</name>
 
     <dependencies>
         <dependency>

@@ -6,7 +6,7 @@
     <parent>
         <groupId>me.hsgamer</groupId>
         <artifactId>topper-storage-sql</artifactId>
-        <version>4.0.0</version>
+        <version>4.1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>topper-storage-sql-converter</artifactId>

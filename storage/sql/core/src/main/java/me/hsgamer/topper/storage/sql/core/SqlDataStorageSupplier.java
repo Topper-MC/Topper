@@ -285,6 +285,7 @@ public abstract class SqlDataStorageSupplier {
                         statement.append(")");
                     }
                     statement.append(");");
+                    logger.log(LogLevel.INFO, "Creating table: " + statement);
                     StatementBuilder.create(connection)
                             .setStatement(statement.toString())
                             .update();

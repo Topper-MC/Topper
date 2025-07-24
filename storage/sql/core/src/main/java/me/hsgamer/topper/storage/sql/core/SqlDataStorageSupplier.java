@@ -51,6 +51,10 @@ public abstract class SqlDataStorageSupplier {
         return setting;
     }
 
+    public static Options options() {
+        return new Options();
+    }
+
     protected boolean isSingleThread() {
         return false;
     }
@@ -291,10 +295,6 @@ public abstract class SqlDataStorageSupplier {
                 }
             }
         };
-    }
-
-    public Options options() {
-        return new Options();
     }
 
     public static class Options {

@@ -258,34 +258,17 @@ public abstract class SqlDataStorageSupplier {
                         }
                     }
                     statement.append(", ");
-                    if (incrementalKey != null) {
-                        statement.append("PRIMARY KEY (`")
-                                .append(incrementalKey)
-                                .append("`), ");
-                        statement.append("UNIQUE KEY (");
-                        for (int i = 0; i < keyColumns.length; i++) {
-                            statement.append("`")
-                                    .append(keyColumns[i])
-                                    .append("`");
-                            if (i != keyColumns.length - 1) {
-                                statement.append(", ");
-                            }
+                    statement.append(incrementalKey != null ? "UNIQUE (" : "PRIMARY KEY (");
+                    for (int i = 0; i < keyColumns.length; i++) {
+                        statement.append("`")
+                                .append(keyColumns[i])
+                                .append("`");
+                        if (i != keyColumns.length - 1) {
+                            statement.append(", ");
                         }
-                        statement.append(")");
-                    } else {
-                        statement.append("PRIMARY KEY (");
-                        for (int i = 0; i < keyColumns.length; i++) {
-                            statement.append("`")
-                                    .append(keyColumns[i])
-                                    .append("`");
-                            if (i != keyColumns.length - 1) {
-                                statement.append(", ");
-                            }
-                        }
-                        statement.append(")");
                     }
+                    statement.append(")");
                     statement.append(");");
-                    logger.log(LogLevel.INFO, "Creating table: " + statement);
                     StatementBuilder.create(connection)
                             .setStatement(statement.toString())
                             .update();

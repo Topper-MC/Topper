@@ -21,7 +21,7 @@ public class MySqlDataStorageSupplier extends SqlDataStorageSupplier {
 
     @Override
     protected String getIncrementalKeyDefinition() {
-        return "INTEGER AUTO_INCREMENT";
+        return "INTEGER PRIMARY KEY AUTO_INCREMENT";
     }
 
     @Override

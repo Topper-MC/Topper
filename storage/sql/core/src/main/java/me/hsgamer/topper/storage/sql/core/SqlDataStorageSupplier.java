@@ -20,15 +20,21 @@ import java.util.stream.Collectors;
 
 public abstract class SqlDataStorageSupplier {
     protected final Logger logger = LoggerProvider.getLogger(getClass());
+    protected final Options options;
     private final SqlClient<?> client;
     private final Lock lock = new ReentrantLock();
 
-    protected SqlDataStorageSupplier(SqlClient<?> client) {
-        this.client = client;
+    protected SqlDataStorageSupplier(Driver driver, SqlDatabaseSetting databaseSetting, Options options) {
+        this.options = options;
+        Function<Setting, SqlClient<?>> clientFunction = options.clientFunction;
+        if (clientFunction == null) {
+            throw new IllegalArgumentException("clientFunction is null");
+        }
+        this.client = clientFunction.apply(applyDatabaseSetting(databaseSetting, Setting.create(driver)));
     }
 
     protected SqlDataStorageSupplier(Driver driver, SqlDatabaseSetting databaseSetting, Function<Setting, SqlClient<?>> clientFunction) {
-        this(clientFunction.apply(applyDatabaseSetting(databaseSetting, Setting.create(driver))));
+        this(driver, databaseSetting, new Options().setClientFunction(clientFunction));
     }
 
     protected static Setting applyDatabaseSetting(SqlDatabaseSetting databaseSetting, Setting setting) {
@@ -48,6 +54,8 @@ public abstract class SqlDataStorageSupplier {
     protected boolean isSingleThread() {
         return false;
     }
+
+    protected abstract String getIncrementalKeyDefinition();
 
     protected abstract List<String> toSaveStatement(String name, String[] keyColumns, String[] valueColumns);
 
@@ -216,6 +224,7 @@ public abstract class SqlDataStorageSupplier {
             public void onRegister() {
                 lock();
                 try (Connection connection = client.getConnection()) {
+                    String incrementalKey = options.incrementalKey;
                     String[] keyColumns = keyConverter.getSqlColumns();
                     String[] keyColumnDefinitions = keyConverter.getSqlColumnDefinitions();
                     String[] valueColumns = valueConverter.getSqlColumns();
@@ -223,6 +232,16 @@ public abstract class SqlDataStorageSupplier {
                     StringBuilder statement = new StringBuilder("CREATE TABLE IF NOT EXISTS `")
                             .append(name)
                             .append("` (");
+
+                    if (incrementalKey != null) {
+                        String incrementalKeyDefinition = getIncrementalKeyDefinition();
+                        statement.append("`")
+                                .append(incrementalKey)
+                                .append("` ")
+                                .append(incrementalKeyDefinition)
+                                .append(", ");
+                    }
+
                     for (int i = 0; i < keyColumns.length + valueColumns.length; i++) {
                         boolean isKey = i < keyColumns.length;
                         int index = isKey ? i : i - keyColumns.length;
@@ -234,16 +253,34 @@ public abstract class SqlDataStorageSupplier {
                             statement.append(", ");
                         }
                     }
-                    statement.append(", PRIMARY KEY (");
-                    for (int i = 0; i < keyColumns.length; i++) {
-                        statement.append("`")
-                                .append(keyColumns[i])
-                                .append("`");
-                        if (i != keyColumns.length - 1) {
-                            statement.append(", ");
+                    statement.append(", ");
+                    if (incrementalKey != null) {
+                        statement.append("PRIMARY KEY (`")
+                                .append(incrementalKey)
+                                .append("`), ");
+                        statement.append("UNIQUE KEY (`");
+                        for (int i = 0; i < keyColumns.length; i++) {
+                            statement.append("`")
+                                    .append(keyColumns[i])
+                                    .append("`");
+                            if (i != keyColumns.length - 1) {
+                                statement.append(", ");
+                            }
                         }
+                        statement.append("`)");
+                    } else {
+                        statement.append("PRIMARY KEY (");
+                        for (int i = 0; i < keyColumns.length; i++) {
+                            statement.append("`")
+                                    .append(keyColumns[i])
+                                    .append("`");
+                            if (i != keyColumns.length - 1) {
+                                statement.append(", ");
+                            }
+                        }
+                        statement.append(")");
                     }
-                    statement.append(")").append(");");
+                    statement.append(");");
                     StatementBuilder.create(connection)
                             .setStatement(statement.toString())
                             .update();
@@ -254,5 +291,32 @@ public abstract class SqlDataStorageSupplier {
                 }
             }
         };
+    }
+
+    public Options options() {
+        return new Options();
+    }
+
+    public static class Options {
+        private Function<Setting, SqlClient<?>> clientFunction;
+        private String incrementalKey = null;
+
+        private Options() {
+            // Default constructor
+        }
+
+        public Options setClientFunction(Function<Setting, SqlClient<?>> clientFunction) {
+            this.clientFunction = clientFunction;
+            return this;
+        }
+
+        public Options setIncrementalKey(String incrementalKey) {
+            this.incrementalKey = incrementalKey;
+            return this;
+        }
+
+        public Options useIncrementalKey() {
+            return setIncrementalKey("id");
+        }
     }
 }

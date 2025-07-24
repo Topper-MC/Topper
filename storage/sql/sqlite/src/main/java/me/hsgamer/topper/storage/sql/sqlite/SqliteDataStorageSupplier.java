@@ -27,7 +27,7 @@ public class SqliteDataStorageSupplier extends SqlDataStorageSupplier {
 
     @Override
     protected String getIncrementalKeyDefinition() {
-        return "INTEGER NOT NULL AUTOINCREMENT";
+        return "INTEGER AUTOINCREMENT";
     }
 
     @Override

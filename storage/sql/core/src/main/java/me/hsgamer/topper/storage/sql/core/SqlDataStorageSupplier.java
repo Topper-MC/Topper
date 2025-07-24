@@ -262,7 +262,7 @@ public abstract class SqlDataStorageSupplier {
                         statement.append("PRIMARY KEY (`")
                                 .append(incrementalKey)
                                 .append("`), ");
-                        statement.append("UNIQUE KEY (`");
+                        statement.append("UNIQUE KEY (");
                         for (int i = 0; i < keyColumns.length; i++) {
                             statement.append("`")
                                     .append(keyColumns[i])
@@ -271,7 +271,7 @@ public abstract class SqlDataStorageSupplier {
                                 statement.append(", ");
                             }
                         }
-                        statement.append("`)");
+                        statement.append(")");
                     } else {
                         statement.append("PRIMARY KEY (");
                         for (int i = 0; i < keyColumns.length; i++) {

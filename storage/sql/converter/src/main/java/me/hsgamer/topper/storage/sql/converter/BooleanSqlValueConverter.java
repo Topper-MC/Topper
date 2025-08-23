@@ -21,7 +21,7 @@ public class BooleanSqlValueConverter implements SqlValueConverter<Boolean> {
 
     @Override
     public String[] getSqlColumnDefinitions() {
-        return new String[]{valueName + " BOOLEAN NOT NULL"};
+        return new String[]{"BOOLEAN NOT NULL"};
     }
 
     @Override

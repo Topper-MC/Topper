@@ -10,7 +10,6 @@ me.hsgamer.topper.query.forward
 me.hsgamer.topper.query.holder
 me.hsgamer.topper.query.simple
 me.hsgamer.topper.query.snapshot
-me.hsgamer.topper.storage.bundle
 me.hsgamer.topper.storage.core
 me.hsgamer.topper.storage.flat.converter
 me.hsgamer.topper.storage.flat.core

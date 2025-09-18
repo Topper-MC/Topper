@@ -15,7 +15,6 @@
         <module>core</module>
         <module>flat</module>
         <module>sql</module>
-        <module>bundle</module>
     </modules>
 
     <name>Topper Storage</name>

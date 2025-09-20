@@ -117,17 +117,8 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
         String suffix = entry.getValue();
         BigDecimal divided = BigDecimal.valueOf(absValue)
                 .divide(BigDecimal.valueOf(threshold), 10, RoundingMode.DOWN);
-        
-        int decimalPlaces;
-        if (divided.compareTo(BigDecimal.valueOf(10)) < 0) {
-            decimalPlaces = 2;
-        } else if (divided.compareTo(BigDecimal.valueOf(100)) < 0) {
-            decimalPlaces = 1;
-        } else {
-            decimalPlaces = 0;
-        }
 
-        divided = divided.setScale(decimalPlaces, RoundingMode.DOWN);
+        divided = divided.setScale(2, RoundingMode.DOWN);
         String formatted = divided.stripTrailingZeros().toPlainString();
         
         return (isNegative ? "-" : "") + formatted + suffix;

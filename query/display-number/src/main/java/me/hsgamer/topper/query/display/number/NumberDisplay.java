@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,19 +29,15 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
     private static final Pattern VALUE_PLACEHOLDER_PATTERN = Pattern.compile("\\{value(?:_(.*))?}");
     private static final String FORMAT_QUERY_DECIMAL_FORMAT_PREFIX = "decimal:";
     private static final String FORMAT_QUERY_TIME_FORMAT_PREFIX = "time:";
+    private static final String FORMAT_QUERY_SHORTEN = "shorten";
+    private static final Map<String, NavigableMap<Double, String>> SUFFIX_CACHE = new ConcurrentHashMap<>();
 
     private final String line;
     private final String displayNullValue;
-    private final NavigableMap<Double, String> customFormats;
 
     protected NumberDisplay(String line, String displayNullValue) {
-        this(line, displayNullValue, new TreeMap<>());
-    }
-
-    protected NumberDisplay(String line, String displayNullValue, NavigableMap<Double, String> customFormats) {
         this.line = line;
         this.displayNullValue = displayNullValue;
-        this.customFormats = customFormats != null ? customFormats : new TreeMap<>();
     }
 
     private static Map<String, String> getSettings(String query) {
@@ -56,8 +53,41 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                 .collect(Collectors.toMap(a -> a[0], a -> a[1], (a, b) -> a));
     }
 
-    private String formatWithSuffix(double value) {
-        if (customFormats.isEmpty()) {
+    private static NavigableMap<Double, String> parseSuffixConfig(String config) {
+        return SUFFIX_CACHE.computeIfAbsent(config, key -> {
+            NavigableMap<Double, String> suffixMap = new TreeMap<>();
+            
+            if (config.isEmpty()) {
+                suffixMap.put(1000.0, "k");
+                suffixMap.put(1000000.0, "M");
+                suffixMap.put(1000000000.0, "B");
+                suffixMap.put(1000000000000.0, "T");
+                return suffixMap;
+            }
+            
+            try {
+                Map<String, String> settings = getSettings(config);
+                for (Map.Entry<String, String> entry : settings.entrySet()) {
+                    try {
+                        double threshold = Double.parseDouble(entry.getKey());
+                        String suffix = entry.getValue();
+                        suffixMap.put(threshold, suffix);
+                    } catch (NumberFormatException e) {
+                    }
+                }
+            } catch (Exception e) {
+                suffixMap.put(1000.0, "k");
+                suffixMap.put(1000000.0, "M");
+                suffixMap.put(1000000000.0, "B");
+                suffixMap.put(1000000000000.0, "T");
+            }
+            
+            return suffixMap;
+        });
+    }
+
+    private String formatWithSuffix(double value, NavigableMap<Double, String> suffixMap) {
+        if (suffixMap.isEmpty()) {
             if (value == (long) value) {
                 return String.format(Locale.ENGLISH, "%,d", (long) value);
             } else {
@@ -68,7 +98,7 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
         boolean isNegative = value < 0;
         double absValue = Math.abs(value);
         
-        Map.Entry<Double, String> entry = customFormats.floorEntry(absValue);
+        Map.Entry<Double, String> entry = suffixMap.floorEntry(absValue);
         if (entry == null || entry.getKey() == 0 || absValue < 1000) {
             if (absValue == (long) absValue) {
                 return (isNegative ? "-" : "") + String.format(Locale.ENGLISH, "%,d", (long) absValue);
@@ -104,11 +134,22 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
         double doubleValue = value.doubleValue();
 
         if (formatQuery == null) {
-            return formatWithSuffix(doubleValue);
+            DecimalFormat decimalFormat = new DecimalFormat("#.##");
+            return decimalFormat.format(value);
         }
 
         if (formatQuery.equals("raw")) {
             return String.valueOf(value);
+        }
+
+        if (formatQuery.startsWith(FORMAT_QUERY_SHORTEN)) {
+            String config = formatQuery.substring(FORMAT_QUERY_SHORTEN.length());
+            if (config.startsWith(":")) {
+                config = config.substring(1);
+            }
+            
+            NavigableMap<Double, String> suffixMap = parseSuffixConfig(config);
+            return formatWithSuffix(doubleValue, suffixMap);
         }
 
         if (formatQuery.startsWith(FORMAT_QUERY_DECIMAL_FORMAT_PREFIX)) {
@@ -202,28 +243,8 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
         }
 
         try {
-            if (customFormats.isEmpty()) {
-                DecimalFormat decimalFormat = new DecimalFormat(formatQuery);
-                return decimalFormat.format(doubleValue);
-            }
-            
-            boolean isNegative = doubleValue < 0;
-            double absValue = Math.abs(doubleValue);
-            
-            Map.Entry<Double, String> entry = customFormats.floorEntry(absValue);
-            if (entry == null || entry.getKey() == 0) {
-                DecimalFormat decimalFormat = new DecimalFormat(formatQuery);
-                return (isNegative ? "-" : "") + decimalFormat.format(doubleValue);
-            }
-
-            double threshold = entry.getKey();
-            String suffix = entry.getValue();
-            double divided = absValue / threshold;
             DecimalFormat decimalFormat = new DecimalFormat(formatQuery);
-            String formatted = decimalFormat.format(divided);
-            formatted = formatted.replaceAll("\\.0*$", "");
-            
-            return (isNegative ? "-" : "") + formatted + suffix;
+            return decimalFormat.format(value);
         } catch (IllegalArgumentException e) {
             return "INVALID_FORMAT";
         }

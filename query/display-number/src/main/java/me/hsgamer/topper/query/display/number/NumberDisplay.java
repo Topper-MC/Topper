@@ -33,6 +33,10 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
     private final String displayNullValue;
     private final NavigableMap<Double, String> customFormats;
 
+    protected NumberDisplay(String line, String displayNullValue) {
+        this(line, displayNullValue, new TreeMap<>());
+    }
+
     protected NumberDisplay(String line, String displayNullValue, NavigableMap<Double, String> customFormats) {
         this.line = line;
         this.displayNullValue = displayNullValue;

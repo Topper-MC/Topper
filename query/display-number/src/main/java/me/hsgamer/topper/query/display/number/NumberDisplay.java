@@ -1,11 +1,5 @@
 package me.hsgamer.topper.query.display.number;
 
-import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
-import me.hsgamer.topper.value.timeformat.DateTimeFormatters;
-import me.hsgamer.topper.value.timeformat.DurationTimeFormatters;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -13,12 +7,22 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
+import me.hsgamer.topper.value.timeformat.DateTimeFormatters;
+import me.hsgamer.topper.value.timeformat.DurationTimeFormatters;
 
 public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryDisplay<K, V> {
     private static final Pattern VALUE_PLACEHOLDER_PATTERN = Pattern.compile("\\{value(?:_(.*))?}");
@@ -27,10 +31,12 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
 
     private final String line;
     private final String displayNullValue;
+    private final NavigableMap<Double, String> customFormats;
 
-    protected NumberDisplay(String line, String displayNullValue) {
+    protected NumberDisplay(String line, String displayNullValue, NavigableMap<Double, String> customFormats) {
         this.line = line;
         this.displayNullValue = displayNullValue;
+        this.customFormats = customFormats != null ? customFormats : new TreeMap<>();
     }
 
     private static Map<String, String> getSettings(String query) {
@@ -46,15 +52,55 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                 .collect(Collectors.toMap(a -> a[0], a -> a[1], (a, b) -> a));
     }
 
+    private String formatWithSuffix(double value) {
+        if (customFormats.isEmpty()) {
+            if (value == (long) value) {
+                return String.format(Locale.ENGLISH, "%,d", (long) value);
+            } else {
+                return String.format(Locale.ENGLISH, "%,.2f", value).replaceAll("\\.?0+$", "");
+            }
+        }
+
+        boolean isNegative = value < 0;
+        double absValue = Math.abs(value);
+        
+        Map.Entry<Double, String> entry = customFormats.floorEntry(absValue);
+        if (entry == null || entry.getKey() == 0 || absValue < 1000) {
+            if (absValue == (long) absValue) {
+                return (isNegative ? "-" : "") + String.format(Locale.ENGLISH, "%,d", (long) absValue);
+            } else {
+                String formatted = String.format(Locale.ENGLISH, "%,.2f", absValue);
+                formatted = formatted.replaceAll("\\.?0+$", "");
+                return (isNegative ? "-" : "") + formatted;
+            }
+        }
+
+        double threshold = entry.getKey();
+        String suffix = entry.getValue();
+        double divided = absValue / threshold;
+        if (divided < 10) {
+            String formatted = String.format(Locale.ENGLISH, "%,.2f", divided);
+            formatted = formatted.replaceAll("\\.?0+$", "");
+            return (isNegative ? "-" : "") + formatted + suffix;
+        } else if (divided < 100) {
+            String formatted = String.format(Locale.ENGLISH, "%,.1f", divided);
+            formatted = formatted.replaceAll("\\.?0+$", "");
+            return (isNegative ? "-" : "") + formatted + suffix;
+        } else {
+            return (isNegative ? "-" : "") + String.format(Locale.ENGLISH, "%,.0f", divided) + suffix;
+        }
+    }
+
     @Override
     public @NotNull String getDisplayValue(@Nullable V value, @Nullable String formatQuery) {
         if (value == null) {
             return displayNullValue;
         }
 
+        double doubleValue = value.doubleValue();
+
         if (formatQuery == null) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##");
-            return decimalFormat.format(value);
+            return formatWithSuffix(doubleValue);
         }
 
         if (formatQuery.equals("raw")) {
@@ -152,8 +198,28 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
         }
 
         try {
+            if (customFormats.isEmpty()) {
+                DecimalFormat decimalFormat = new DecimalFormat(formatQuery);
+                return decimalFormat.format(doubleValue);
+            }
+            
+            boolean isNegative = doubleValue < 0;
+            double absValue = Math.abs(doubleValue);
+            
+            Map.Entry<Double, String> entry = customFormats.floorEntry(absValue);
+            if (entry == null || entry.getKey() == 0) {
+                DecimalFormat decimalFormat = new DecimalFormat(formatQuery);
+                return (isNegative ? "-" : "") + decimalFormat.format(doubleValue);
+            }
+
+            double threshold = entry.getKey();
+            String suffix = entry.getValue();
+            double divided = absValue / threshold;
             DecimalFormat decimalFormat = new DecimalFormat(formatQuery);
-            return decimalFormat.format(value);
+            String formatted = decimalFormat.format(divided);
+            formatted = formatted.replaceAll("\\.0*$", "");
+            
+            return (isNegative ? "-" : "") + formatted + suffix;
         } catch (IllegalArgumentException e) {
             return "INVALID_FORMAT";
         }

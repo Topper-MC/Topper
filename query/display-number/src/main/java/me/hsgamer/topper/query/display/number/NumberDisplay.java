@@ -1,5 +1,6 @@
 package me.hsgamer.topper.query.display.number;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -91,7 +92,9 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
             if (value == (long) value) {
                 return String.format(Locale.ENGLISH, "%,d", (long) value);
             } else {
-                return String.format(Locale.ENGLISH, "%,.2f", value).replaceAll("\\.?0+$", "");
+                BigDecimal bd = BigDecimal.valueOf(value);
+                bd = bd.setScale(2, RoundingMode.DOWN);
+                return bd.stripTrailingZeros().toPlainString();
             }
         }
 
@@ -103,26 +106,31 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
             if (absValue == (long) absValue) {
                 return (isNegative ? "-" : "") + String.format(Locale.ENGLISH, "%,d", (long) absValue);
             } else {
-                String formatted = String.format(Locale.ENGLISH, "%,.2f", absValue);
-                formatted = formatted.replaceAll("\\.?0+$", "");
+                BigDecimal bd = BigDecimal.valueOf(absValue);
+                bd = bd.setScale(2, RoundingMode.DOWN);
+                String formatted = bd.stripTrailingZeros().toPlainString();
                 return (isNegative ? "-" : "") + formatted;
             }
         }
 
         double threshold = entry.getKey();
         String suffix = entry.getValue();
-        double divided = absValue / threshold;
-        if (divided < 10) {
-            String formatted = String.format(Locale.ENGLISH, "%,.2f", divided);
-            formatted = formatted.replaceAll("\\.?0+$", "");
-            return (isNegative ? "-" : "") + formatted + suffix;
-        } else if (divided < 100) {
-            String formatted = String.format(Locale.ENGLISH, "%,.1f", divided);
-            formatted = formatted.replaceAll("\\.?0+$", "");
-            return (isNegative ? "-" : "") + formatted + suffix;
+        BigDecimal divided = BigDecimal.valueOf(absValue)
+                .divide(BigDecimal.valueOf(threshold), 10, RoundingMode.DOWN);
+        
+        int decimalPlaces;
+        if (divided.compareTo(BigDecimal.valueOf(10)) < 0) {
+            decimalPlaces = 2;
+        } else if (divided.compareTo(BigDecimal.valueOf(100)) < 0) {
+            decimalPlaces = 1;
         } else {
-            return (isNegative ? "-" : "") + String.format(Locale.ENGLISH, "%,.0f", divided) + suffix;
+            decimalPlaces = 0;
         }
+
+        divided = divided.setScale(decimalPlaces, RoundingMode.DOWN);
+        String formatted = divided.stripTrailingZeros().toPlainString();
+        
+        return (isNegative ? "-" : "") + formatted + suffix;
     }
 
     @Override

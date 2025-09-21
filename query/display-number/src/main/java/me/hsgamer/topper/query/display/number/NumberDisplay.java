@@ -1,37 +1,31 @@
 package me.hsgamer.topper.query.display.number;
 
+import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
+import me.hsgamer.topper.value.timeformat.DateTimeFormatters;
+import me.hsgamer.topper.value.timeformat.DurationTimeFormatters;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
-import me.hsgamer.topper.value.timeformat.DateTimeFormatters;
-import me.hsgamer.topper.value.timeformat.DurationTimeFormatters;
-
 public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryDisplay<K, V> {
     private static final Pattern VALUE_PLACEHOLDER_PATTERN = Pattern.compile("\\{value(?:_(.*))?}");
-    private static final String FORMAT_QUERY_DECIMAL_FORMAT_PREFIX = "decimal:";
-    private static final String FORMAT_QUERY_TIME_FORMAT_PREFIX = "time:";
+    private static final String FORMAT_QUERY_DECIMAL = "decimal";
+    private static final String FORMAT_QUERY_TIME = "time";
     private static final String FORMAT_QUERY_SHORTEN = "shorten";
-    private static final Map<String, NavigableMap<Double, String>> SUFFIX_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, Function<Number, String>> displayByQueryCache = new ConcurrentHashMap<>();
 
     private final String line;
     private final String displayNullValue;
@@ -46,6 +40,11 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
             return Collections.emptyMap();
         }
 
+        // Handle prefix-setting separator if exists
+        if (query.startsWith(":")) {
+            query = query.substring(1);
+        }
+
         final String separator = "&";
         final String keyValueSeparator = "=";
         return Arrays.stream(query.split(Pattern.quote(separator)))
@@ -54,105 +53,120 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                 .collect(Collectors.toMap(a -> a[0], a -> a[1], (a, b) -> a));
     }
 
-    private static NavigableMap<Double, String> parseSuffixConfig(String config) {
-        return SUFFIX_CACHE.computeIfAbsent(config, key -> {
+    private static Function<Number, String> createDisplayFunction(String formatQuery) {
+        if (formatQuery.startsWith(FORMAT_QUERY_SHORTEN)) {
+            String config = formatQuery.substring(FORMAT_QUERY_SHORTEN.length());
             NavigableMap<Double, String> suffixMap = new TreeMap<>();
-            
+
             if (config.isEmpty()) {
                 suffixMap.put(1000.0, "k");
                 suffixMap.put(1000000.0, "M");
                 suffixMap.put(1000000000.0, "B");
                 suffixMap.put(1000000000000.0, "T");
-                return suffixMap;
-            }
-            
-            try {
+            } else {
                 Map<String, String> settings = getSettings(config);
                 for (Map.Entry<String, String> entry : settings.entrySet()) {
                     try {
                         double threshold = Double.parseDouble(entry.getKey());
                         String suffix = entry.getValue();
                         suffixMap.put(threshold, suffix);
-                    } catch (NumberFormatException e) {
+                    } catch (NumberFormatException ignored) {
+                        return n -> "INVALID_NUMBER_FOR_SHORTEN_SUFFIX";
                     }
                 }
-            } catch (Exception e) {
-                suffixMap.put(1000.0, "k");
-                suffixMap.put(1000000.0, "M");
-                suffixMap.put(1000000000.0, "B");
-                suffixMap.put(1000000000000.0, "T");
             }
-            
-            return suffixMap;
-        });
-    }
+            return n -> {
+                double value = n.doubleValue();
+                if (suffixMap.isEmpty()) {
+                    if (value == (long) value) {
+                        return String.format(Locale.ENGLISH, "%,d", (long) value);
+                    } else {
+                        BigDecimal bd = BigDecimal.valueOf(value);
+                        bd = bd.setScale(2, RoundingMode.DOWN);
+                        return bd.stripTrailingZeros().toPlainString();
+                    }
+                }
 
-    private String formatWithSuffix(double value, NavigableMap<Double, String> suffixMap) {
-        if (suffixMap.isEmpty()) {
-            if (value == (long) value) {
-                return String.format(Locale.ENGLISH, "%,d", (long) value);
+                boolean isNegative = value < 0;
+                double absValue = Math.abs(value);
+
+                Map.Entry<Double, String> entry = suffixMap.floorEntry(absValue);
+                if (entry == null || entry.getKey() == 0 || absValue < 1000) {
+                    if (absValue == (long) absValue) {
+                        return (isNegative ? "-" : "") + String.format(Locale.ENGLISH, "%,d", (long) absValue);
+                    } else {
+                        BigDecimal bd = BigDecimal.valueOf(absValue);
+                        bd = bd.setScale(2, RoundingMode.DOWN);
+                        String formatted = bd.stripTrailingZeros().toPlainString();
+                        return (isNegative ? "-" : "") + formatted;
+                    }
+                }
+
+                double threshold = entry.getKey();
+                String suffix = entry.getValue();
+                BigDecimal divided = BigDecimal.valueOf(absValue)
+                        .divide(BigDecimal.valueOf(threshold), 10, RoundingMode.DOWN);
+
+                divided = divided.setScale(2, RoundingMode.DOWN);
+                String formatted = divided.stripTrailingZeros().toPlainString();
+
+                return (isNegative ? "-" : "") + formatted + suffix;
+            };
+        }
+
+        if (formatQuery.startsWith(FORMAT_QUERY_TIME)) {
+            Map<String, String> settings = getSettings(formatQuery.substring(FORMAT_QUERY_TIME.length()));
+
+            String unitString = Optional.ofNullable(settings.get("unit")).orElse("ticks");
+            Function<Number, Long> toMillis;
+            if (unitString.equalsIgnoreCase("ticks")) {
+                toMillis = n -> n.longValue() * 50;
             } else {
-                BigDecimal bd = BigDecimal.valueOf(value);
-                bd = bd.setScale(2, RoundingMode.DOWN);
-                return bd.stripTrailingZeros().toPlainString();
+                try {
+                    TimeUnit unit = TimeUnit.valueOf(unitString.toUpperCase());
+                    toMillis = n -> unit.toMillis(n.longValue());
+                } catch (IllegalArgumentException e) {
+                    return n -> "INVALID_UNIT";
+                }
+            }
+
+            String type = Optional.ofNullable(settings.get("type")).orElse("duration");
+            Optional<String> patternOptional = Optional.ofNullable(settings.get("pattern"));
+            if (type.equalsIgnoreCase("time")) {
+                String pattern = patternOptional.orElse("RFC_1123_DATE_TIME");
+                Optional<DateTimeFormatter> formatterOptional = DateTimeFormatters.getFormatter(pattern);
+                if (!formatterOptional.isPresent()) {
+                    return n -> "INVALID_FORMAT";
+                }
+                DateTimeFormatter formatter = formatterOptional.get();
+
+                try {
+                    return n -> {
+                        long millis = toMillis.apply(n.longValue());
+                        Instant date = Instant.ofEpochMilli(millis);
+                        return formatter.format(date);
+                    };
+                } catch (IllegalArgumentException e) {
+                    return n -> "CANNOT_FORMAT";
+                }
+            } else if (type.equalsIgnoreCase("duration")) {
+                String pattern = patternOptional.orElse("default");
+                if (pattern.equalsIgnoreCase("default")) {
+                    return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, "HH:mm:ss"));
+                } else if (pattern.equalsIgnoreCase("word")) {
+                    return toMillis.andThen(millis -> DurationTimeFormatters.formatDurationWords(millis, true, true));
+                } else if (pattern.equalsIgnoreCase("short")) {
+                    return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, "H:mm:ss"));
+                } else if (pattern.equalsIgnoreCase("short-word")) {
+                    return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, "d'd 'H'h 'm'm 's's'"));
+                } else {
+                    return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, pattern));
+                }
             }
         }
 
-        boolean isNegative = value < 0;
-        double absValue = Math.abs(value);
-        
-        Map.Entry<Double, String> entry = suffixMap.floorEntry(absValue);
-        if (entry == null || entry.getKey() == 0 || absValue < 1000) {
-            if (absValue == (long) absValue) {
-                return (isNegative ? "-" : "") + String.format(Locale.ENGLISH, "%,d", (long) absValue);
-            } else {
-                BigDecimal bd = BigDecimal.valueOf(absValue);
-                bd = bd.setScale(2, RoundingMode.DOWN);
-                String formatted = bd.stripTrailingZeros().toPlainString();
-                return (isNegative ? "-" : "") + formatted;
-            }
-        }
-
-        double threshold = entry.getKey();
-        String suffix = entry.getValue();
-        BigDecimal divided = BigDecimal.valueOf(absValue)
-                .divide(BigDecimal.valueOf(threshold), 10, RoundingMode.DOWN);
-
-        divided = divided.setScale(2, RoundingMode.DOWN);
-        String formatted = divided.stripTrailingZeros().toPlainString();
-        
-        return (isNegative ? "-" : "") + formatted + suffix;
-    }
-
-    @Override
-    public @NotNull String getDisplayValue(@Nullable V value, @Nullable String formatQuery) {
-        if (value == null) {
-            return displayNullValue;
-        }
-
-        double doubleValue = value.doubleValue();
-
-        if (formatQuery == null) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##");
-            return decimalFormat.format(value);
-        }
-
-        if (formatQuery.equals("raw")) {
-            return String.valueOf(value);
-        }
-
-        if (formatQuery.startsWith(FORMAT_QUERY_SHORTEN)) {
-            String config = formatQuery.substring(FORMAT_QUERY_SHORTEN.length());
-            if (config.startsWith(":")) {
-                config = config.substring(1);
-            }
-            
-            NavigableMap<Double, String> suffixMap = parseSuffixConfig(config);
-            return formatWithSuffix(doubleValue, suffixMap);
-        }
-
-        if (formatQuery.startsWith(FORMAT_QUERY_DECIMAL_FORMAT_PREFIX)) {
-            Map<String, String> settings = getSettings(formatQuery.substring(FORMAT_QUERY_DECIMAL_FORMAT_PREFIX.length()));
+        if (formatQuery.startsWith(FORMAT_QUERY_DECIMAL)) {
+            Map<String, String> settings = getSettings(formatQuery.substring(FORMAT_QUERY_DECIMAL.length()));
 
             DecimalFormatSymbols symbols = new DecimalFormatSymbols();
             DecimalFormat decimalFormat = new DecimalFormat();
@@ -189,64 +203,34 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                     .ifPresent(decimalFormat::setMaximumFractionDigits);
 
             decimalFormat.setDecimalFormatSymbols(symbols);
-            return decimalFormat.format(value);
-        }
 
-        if (formatQuery.startsWith(FORMAT_QUERY_TIME_FORMAT_PREFIX)) {
-            Map<String, String> settings = getSettings(formatQuery.substring(FORMAT_QUERY_TIME_FORMAT_PREFIX.length()));
-
-            long time = value.longValue();
-            String unitString = Optional.ofNullable(settings.get("unit")).orElse("ticks");
-            long millis;
-            if (unitString.equalsIgnoreCase("ticks")) {
-                millis = time * 50;
-            } else {
-                try {
-                    TimeUnit unit = TimeUnit.valueOf(unitString.toUpperCase());
-                    millis = unit.toMillis(time);
-                } catch (IllegalArgumentException e) {
-                    return "INVALID_UNIT";
-                }
-            }
-
-            String type = Optional.ofNullable(settings.get("type")).orElse("duration");
-            Optional<String> patternOptional = Optional.ofNullable(settings.get("pattern"));
-            if (type.equalsIgnoreCase("time")) {
-                String pattern = patternOptional.orElse("RFC_1123_DATE_TIME");
-                Optional<DateTimeFormatter> formatterOptional = DateTimeFormatters.getFormatter(pattern);
-                if (!formatterOptional.isPresent()) {
-                    return "INVALID_FORMAT";
-                }
-                DateTimeFormatter formatter = formatterOptional.get();
-
-                Instant date = Instant.ofEpochMilli(millis);
-                try {
-                    return formatter.format(date);
-                } catch (IllegalArgumentException e) {
-                    return "CANNOT_FORMAT";
-                }
-            } else if (type.equalsIgnoreCase("duration")) {
-                String pattern = patternOptional.orElse("default");
-                if (pattern.equalsIgnoreCase("default")) {
-                    return DurationTimeFormatters.formatDuration(millis, "HH:mm:ss");
-                } else if (pattern.equalsIgnoreCase("word")) {
-                    return DurationTimeFormatters.formatDurationWords(millis, true, true);
-                } else if (pattern.equalsIgnoreCase("short")) {
-                    return DurationTimeFormatters.formatDuration(millis, "H:mm:ss");
-                } else if (pattern.equalsIgnoreCase("short-word")) {
-                    return DurationTimeFormatters.formatDuration(millis, "d'd 'H'h 'm'm 's's'");
-                } else {
-                    return DurationTimeFormatters.formatDuration(millis, pattern);
-                }
-            }
+            return n -> ((DecimalFormat) decimalFormat.clone()).format(n);
         }
 
         try {
             DecimalFormat decimalFormat = new DecimalFormat(formatQuery);
-            return decimalFormat.format(value);
+            return n -> ((DecimalFormat) decimalFormat.clone()).format(n);
         } catch (IllegalArgumentException e) {
-            return "INVALID_FORMAT";
+            return n -> "INVALID_FORMAT";
         }
+    }
+
+    @Override
+    public @NotNull String getDisplayValue(@Nullable V value, @Nullable String formatQuery) {
+        if (value == null) {
+            return displayNullValue;
+        }
+
+        if (formatQuery == null) {
+            DecimalFormat decimalFormat = new DecimalFormat("#.##");
+            return decimalFormat.format(value);
+        }
+
+        if (formatQuery.equals("raw")) {
+            return String.valueOf(value);
+        }
+
+        return displayByQueryCache.computeIfAbsent(formatQuery, NumberDisplay::createDisplayFunction).apply(value);
     }
 
     public String getDisplayLine(int index /* 1-based */, @Nullable Map.Entry<K, V> entry) {

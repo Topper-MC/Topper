@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
@@ -21,7 +22,7 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
     private final Map<K, UpdateStatus> map = new ConcurrentHashMap<>();
 
     private Function<K, FilterResult> filter = null;
-    private BiConsumer<K, ValueWrapper<V>> errorHandler = null;
+    private BiFunction<K, ValueWrapper<V>, ValueWrapper<V>> errorHandler = null;
     private int maxSkips = 1;
 
     public UpdateAgent(DataHolder<K, V> holder, Function<K, ValueWrapper<V>> updateFunction) {
@@ -33,8 +34,15 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
         this.filter = filter;
     }
 
-    public void setErrorHandler(BiConsumer<K, ValueWrapper<V>> errorHandler) {
+    public void setErrorHandler(BiFunction<K, ValueWrapper<V>, ValueWrapper<V>> errorHandler) {
         this.errorHandler = errorHandler;
+    }
+
+    public void setErrorHandler(BiConsumer<K, ValueWrapper<V>> errorHandler) {
+        setErrorHandler((k, v) -> {
+            errorHandler.accept(k, v);
+            return v;
+        });
     }
 
     public void setMaxSkips(int maxSkips) {
@@ -83,11 +91,11 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
                     }
 
                     ValueWrapper<V> valueWrapper = updateFunction.apply(key);
+                    if (errorHandler != null && valueWrapper.state == ValueWrapper.State.ERROR) {
+                        valueWrapper = errorHandler.apply(key, valueWrapper);
+                    }
                     switch (valueWrapper.state) {
                         case ERROR:
-                            if (errorHandler != null) {
-                                errorHandler.accept(key, valueWrapper);
-                            }
                         case NOT_HANDLED:
                             entry.setValue(new UpdateStatus.Skip(maxSkips));
                             break;

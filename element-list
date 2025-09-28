@@ -11,6 +11,7 @@ me.hsgamer.topper.query.holder
 me.hsgamer.topper.query.simple
 me.hsgamer.topper.query.snapshot
 me.hsgamer.topper.storage.core
+me.hsgamer.topper.storage.flat.configfile
 me.hsgamer.topper.storage.flat.converter
 me.hsgamer.topper.storage.flat.core
 me.hsgamer.topper.storage.flat.properties

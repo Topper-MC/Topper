@@ -131,6 +131,24 @@ public abstract class SqlDataStorageSupplier {
             }
 
             @Override
+            public Collection<K> keys() {
+                lock();
+                try (Connection connection = client.getConnection()) {
+                    String columnQuery = Arrays.stream(keyConverter.getSqlColumns())
+                            .map(s -> "`" + s + "`")
+                            .collect(Collectors.joining(", "));
+                    return StatementBuilder.create(connection)
+                            .setStatement("SELECT " + columnQuery + " FROM `" + name + "`;")
+                            .queryList(keyConverter::fromSqlResultSet);
+                } catch (SQLException e) {
+                    logger.log(LogLevel.ERROR, "Failed to load holder", e);
+                    return Collections.emptyList();
+                } finally {
+                    unlock();
+                }
+            }
+
+            @Override
             public Optional<Modifier<K, V>> modify() {
                 lock();
                 try {

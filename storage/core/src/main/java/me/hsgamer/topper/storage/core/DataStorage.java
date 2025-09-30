@@ -11,6 +11,10 @@ public interface DataStorage<K, V> {
 
     Optional<Modifier<K, V>> modify();
 
+    default Collection<K> keys() {
+        return load().keySet();
+    }
+
     default void onRegister() {
         // EMPTY
     }

@@ -14,6 +14,7 @@ public class EntryConsumeManager {
     private final TopPlayerNumberTemplate template;
     private final List<Consumer<Context>> consumerList = new ArrayList<>();
     private final Map<String, BiFunction<String, UUID, Optional<Double>>> providerMap = new HashMap<>();
+    private final Map<String, BiFunction<String, UUID, Optional<String>>> nameProviderMap = new HashMap<>();
 
     public EntryConsumeManager(TopPlayerNumberTemplate template) {
         this.template = template;
@@ -37,9 +38,23 @@ public class EntryConsumeManager {
         return () -> providerMap.remove(group);
     }
 
+    public Runnable addNameProvider(String group, BiFunction<String, UUID, Optional<String>> nameProvider) {
+        nameProviderMap.put(group, nameProvider);
+        return () -> nameProviderMap.remove(group);
+    }
+
     public Optional<Double> getValue(String group, String holder, UUID uuid) {
         BiFunction<String, UUID, Optional<Double>> function = providerMap.get(group);
         return function == null ? Optional.empty() : function.apply(holder, uuid);
+    }
+
+    public Optional<String> getName(String group, String holder, UUID uuid) {
+        BiFunction<String, UUID, Optional<String>> function = nameProviderMap.get(group);
+        return function == null ? Optional.empty() : function.apply(holder, uuid);
+    }
+
+    public String getNameOrDefault(String group, String holder, UUID uuid) {
+        return getName(group, holder, uuid).orElseGet(() -> template.getName(uuid));
     }
 
     public void consume(Context context) {

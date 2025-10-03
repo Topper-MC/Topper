@@ -21,7 +21,7 @@ public class TopManager {
     }
 
     public void enable() {
-        storageSupplier = template.getDataStorageSupplier(template.getSettings().storageType(), template.getSettings());
+        storageSupplier = template.getDataStorageSupplier(template.getSettings().storageType(), template.getSettings().storageSettings());
         template.getSettings().holders().forEach((key, value) -> {
             NumberTopHolder topHolder = new NumberTopHolder(template, key, value);
             topHolder.register();

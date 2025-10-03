@@ -14,7 +14,7 @@ public class ValueDisplay extends NumberDisplay<UUID, Double> {
     public final String displayNullUuid;
     private final TopPlayerNumberTemplate template;
 
-    public ValueDisplay(TopPlayerNumberTemplate template, NumberTopHolder.Settings settings) {
+    public ValueDisplay(TopPlayerNumberTemplate template, Settings settings) {
         super(settings.defaultLine(), settings.displayNullValue());
         this.template = template;
         this.displayNullName = settings.displayNullName();
@@ -31,5 +31,15 @@ public class ValueDisplay extends NumberDisplay<UUID, Double> {
 
     public String getDisplayLine(int index /* 1-based */, NumberTopHolder holder) {
         return getDisplayLine(index, holder.getSnapshotAgent().getSnapshotByIndex(index - 1).orElse(null));
+    }
+
+    public interface Settings {
+        String defaultLine();
+
+        String displayNullName();
+
+        String displayNullUuid();
+
+        String displayNullValue();
     }
 }

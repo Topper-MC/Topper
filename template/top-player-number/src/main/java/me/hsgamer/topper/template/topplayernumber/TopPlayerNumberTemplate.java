@@ -76,8 +76,10 @@ public abstract class TopPlayerNumberTemplate {
         return entryConsumeManager;
     }
 
-    public interface Settings extends DataStorageSupplier.Settings {
+    public interface Settings {
         String storageType();
+
+        DataStorageSupplier.Settings storageSettings();
 
         Map<String, NumberTopHolder.Settings> holders();
 

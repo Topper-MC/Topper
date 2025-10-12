@@ -1,4 +1,4 @@
-package me.hsgamer.topper.template.topplayernumber.storage;
+package me.hsgamer.topper.template.storagesupplier.storage;
 
 import me.hsgamer.topper.storage.core.DataStorage;
 import me.hsgamer.topper.storage.flat.core.FlatValueConverter;

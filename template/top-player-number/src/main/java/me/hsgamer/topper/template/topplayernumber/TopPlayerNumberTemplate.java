@@ -2,11 +2,11 @@ package me.hsgamer.topper.template.topplayernumber;
 
 import me.hsgamer.topper.agent.core.Agent;
 import me.hsgamer.topper.agent.core.DataEntryAgent;
+import me.hsgamer.topper.storage.core.DataStorage;
 import me.hsgamer.topper.template.topplayernumber.holder.NumberTopHolder;
 import me.hsgamer.topper.template.topplayernumber.manager.EntryConsumeManager;
 import me.hsgamer.topper.template.topplayernumber.manager.TopManager;
 import me.hsgamer.topper.template.topplayernumber.manager.TopQueryManager;
-import me.hsgamer.topper.template.topplayernumber.storage.DataStorageSupplier;
 import me.hsgamer.topper.value.core.ValueProvider;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,7 +28,7 @@ public abstract class TopPlayerNumberTemplate {
         this.entryConsumeManager = new EntryConsumeManager(this);
     }
 
-    public abstract DataStorageSupplier getDataStorageSupplier(String type, DataStorageSupplier.Settings setting);
+    public abstract DataStorage<UUID, Double> getStorage(String name);
 
     public abstract Optional<ValueProvider<UUID, Double>> createValueProvider(Map<String, Object> settings);
 
@@ -77,10 +77,6 @@ public abstract class TopPlayerNumberTemplate {
     }
 
     public interface Settings {
-        String storageType();
-
-        DataStorageSupplier.Settings storageSettings();
-
         Map<String, NumberTopHolder.Settings> holders();
 
         int taskSaveDelay();

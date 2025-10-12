@@ -61,22 +61,7 @@
         </dependency>
         <dependency>
             <groupId>me.hsgamer</groupId>
-            <artifactId>topper-storage-flat-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>me.hsgamer</groupId>
-            <artifactId>topper-storage-flat-converter</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>me.hsgamer</groupId>
-            <artifactId>topper-storage-sql-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>me.hsgamer</groupId>
-            <artifactId>topper-storage-sql-converter</artifactId>
+            <artifactId>topper-storage-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

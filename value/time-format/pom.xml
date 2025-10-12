@@ -6,7 +6,7 @@
     <parent>
         <groupId>me.hsgamer</groupId>
         <artifactId>topper-value</artifactId>
-        <version>4.5.2</version>
+        <version>4.6.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>topper-value-time-format</artifactId>

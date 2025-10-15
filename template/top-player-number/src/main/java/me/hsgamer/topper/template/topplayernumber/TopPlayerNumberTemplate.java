@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 public abstract class TopPlayerNumberTemplate {
     private final Settings settings;
@@ -31,7 +32,7 @@ public abstract class TopPlayerNumberTemplate {
         this.queryForwardManager = new QueryForwardManager(this);
     }
 
-    public abstract DataStorage<UUID, Double> getStorage(String name);
+    public abstract Function<String, DataStorage<UUID, Double>> getStorageSupplier();
 
     public abstract Optional<ValueProvider<UUID, Double>> createValueProvider(Map<String, Object> settings);
 

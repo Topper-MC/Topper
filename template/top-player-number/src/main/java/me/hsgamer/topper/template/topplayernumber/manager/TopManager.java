@@ -1,19 +1,23 @@
 package me.hsgamer.topper.template.topplayernumber.manager;
 
+import me.hsgamer.topper.storage.core.DataStorage;
 import me.hsgamer.topper.template.topplayernumber.TopPlayerNumberTemplate;
 import me.hsgamer.topper.template.topplayernumber.holder.NumberTopHolder;
 
 import java.util.*;
+import java.util.function.Function;
 
 public class TopManager {
     private final Map<String, NumberTopHolder> holders = new HashMap<>();
     private final TopPlayerNumberTemplate template;
+    private Function<String, DataStorage<UUID, Double>> storageSupplier;
 
     public TopManager(TopPlayerNumberTemplate template) {
         this.template = template;
     }
 
     public void enable() {
+        storageSupplier = template.getStorageSupplier();
         template.getSettings().holders().forEach((key, value) -> {
             NumberTopHolder topHolder = new NumberTopHolder(template, key, value);
             topHolder.register();
@@ -36,5 +40,9 @@ public class TopManager {
 
     public void create(UUID uuid) {
         holders.values().forEach(holder -> holder.getOrCreateEntry(uuid));
+    }
+
+    public DataStorage<UUID, Double> buildStorage(String name) {
+        return storageSupplier.apply(name);
     }
 }

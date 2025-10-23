@@ -12,10 +12,6 @@ import java.util.List;
 import java.util.function.Function;
 
 public class SqliteDataStorageSupplier extends SqlDataStorageSupplier {
-    public SqliteDataStorageSupplier(File baseHolder, SqlDatabaseSetting databaseSetting, Options options) {
-        super(new SqliteFileDriver(baseHolder), databaseSetting, options);
-    }
-
     public SqliteDataStorageSupplier(File baseHolder, SqlDatabaseSetting databaseSetting, Function<Setting, SqlClient<?>> clientFunction) {
         super(new SqliteFileDriver(baseHolder), databaseSetting, clientFunction);
     }

@@ -11,10 +11,6 @@ import java.util.List;
 import java.util.function.Function;
 
 public class MySqlDataStorageSupplier extends SqlDataStorageSupplier {
-    public MySqlDataStorageSupplier(SqlDatabaseSetting databaseSetting, Options options) {
-        super(new MySqlDriver(), databaseSetting, options);
-    }
-
     public MySqlDataStorageSupplier(SqlDatabaseSetting databaseSetting, Function<Setting, SqlClient<?>> clientFunction) {
         super(new MySqlDriver(), databaseSetting, clientFunction);
     }

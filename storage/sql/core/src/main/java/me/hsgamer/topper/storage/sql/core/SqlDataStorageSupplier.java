@@ -20,21 +20,14 @@ import java.util.stream.Collectors;
 
 public abstract class SqlDataStorageSupplier {
     protected final Logger logger = LoggerProvider.getLogger(getClass());
-    protected final Options options;
     private final SqlClient<?> client;
     private final Lock lock = new ReentrantLock();
 
-    protected SqlDataStorageSupplier(Driver driver, SqlDatabaseSetting databaseSetting, Options options) {
-        this.options = options;
-        Function<Setting, SqlClient<?>> clientFunction = options.clientFunction;
+    protected SqlDataStorageSupplier(Driver driver, SqlDatabaseSetting databaseSetting, Function<Setting, SqlClient<?>> clientFunction) {
         if (clientFunction == null) {
             throw new IllegalArgumentException("clientFunction is null");
         }
         this.client = clientFunction.apply(applyDatabaseSetting(databaseSetting, Setting.create(driver)));
-    }
-
-    protected SqlDataStorageSupplier(Driver driver, SqlDatabaseSetting databaseSetting, Function<Setting, SqlClient<?>> clientFunction) {
-        this(driver, databaseSetting, new Options().setClientFunction(clientFunction));
     }
 
     protected static Setting applyDatabaseSetting(SqlDatabaseSetting databaseSetting, Setting setting) {
@@ -51,8 +44,8 @@ public abstract class SqlDataStorageSupplier {
         return setting;
     }
 
-    public static Options options() {
-        return new Options();
+    public static StorageOptions options() {
+        return new StorageOptions();
     }
 
     protected boolean isSingleThread() {
@@ -77,7 +70,7 @@ public abstract class SqlDataStorageSupplier {
         }
     }
 
-    public <K, V> DataStorage<K, V> getStorage(String name, SqlValueConverter<K> keyConverter, SqlValueConverter<V> valueConverter) {
+    public <K, V> DataStorage<K, V> getStorage(String name, SqlValueConverter<K> keyConverter, SqlValueConverter<V> valueConverter, StorageOptions options) {
         return new DataStorage<K, V>() {
             @Override
             public Map<K, V> load() {
@@ -299,25 +292,24 @@ public abstract class SqlDataStorageSupplier {
         };
     }
 
-    public static class Options {
-        private Function<Setting, SqlClient<?>> clientFunction;
+    public <K, V> DataStorage<K, V> getStorage(String name, SqlValueConverter<K> keyConverter, SqlValueConverter<V> valueConverter) {
+        return getStorage(name, keyConverter, valueConverter, StorageOptions.DEFAULT);
+    }
+
+    public static class StorageOptions {
+        public static final StorageOptions DEFAULT = new StorageOptions();
         private String incrementalKey = null;
 
-        private Options() {
+        private StorageOptions() {
             // Default constructor
         }
 
-        public Options setClientFunction(Function<Setting, SqlClient<?>> clientFunction) {
-            this.clientFunction = clientFunction;
-            return this;
-        }
-
-        public Options setIncrementalKey(String incrementalKey) {
+        public StorageOptions setIncrementalKey(String incrementalKey) {
             this.incrementalKey = incrementalKey;
             return this;
         }
 
-        public Options useIncrementalKey() {
+        public StorageOptions useIncrementalKey() {
             return setIncrementalKey("id");
         }
     }

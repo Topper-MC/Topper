@@ -6,7 +6,7 @@
     <parent>
         <groupId>me.hsgamer</groupId>
         <artifactId>topper-template</artifactId>
-        <version>4.7.0</version>
+        <version>4.8.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>topper-template-top-player-number</artifactId>

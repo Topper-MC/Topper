@@ -68,4 +68,41 @@ public final class DurationTimeFormatters {
             return "NOT SUPPORTED";
         }
     }
+
+    public static String formatDurationShortWord(long durationMillis, int maxUnits) {
+        if (durationMillis < 0) {
+            return "0s";
+        }
+
+        long days = durationMillis / (24 * 60 * 60 * 1000);
+        long hours = (durationMillis / (60 * 60 * 1000)) % 24;
+        long minutes = (durationMillis / (60 * 1000)) % 60;
+        long seconds = (durationMillis / 1000) % 60;
+
+        StringBuilder result = new StringBuilder();
+        int unitsAdded = 0;
+
+        if (days > 0 && unitsAdded < maxUnits) {
+            result.append(days).append("d ");
+            unitsAdded++;
+        }
+        if (hours > 0 && unitsAdded < maxUnits) {
+            result.append(hours).append("h ");
+            unitsAdded++;
+        }
+        if (minutes > 0 && unitsAdded < maxUnits) {
+            result.append(minutes).append("m ");
+            unitsAdded++;
+        }
+        if (seconds > 0 && unitsAdded < maxUnits) {
+            result.append(seconds).append("s ");
+            unitsAdded++;
+        }
+
+        if (result.length() == 0) {
+            return "0s";
+        }
+
+        return result.toString().trim();
+    }
 }

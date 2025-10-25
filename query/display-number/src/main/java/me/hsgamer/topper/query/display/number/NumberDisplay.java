@@ -1,24 +1,31 @@
 package me.hsgamer.topper.query.display.number;
 
-import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
-import me.hsgamer.topper.value.timeformat.DateTimeFormatters;
-import me.hsgamer.topper.value.timeformat.DurationTimeFormatters;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
+import me.hsgamer.topper.value.timeformat.DateTimeFormatters;
+import me.hsgamer.topper.value.timeformat.DurationTimeFormatters;
 
 public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryDisplay<K, V> {
     private static final Pattern VALUE_PLACEHOLDER_PATTERN = Pattern.compile("\\{value(?:_(.*))?}");
@@ -158,6 +165,16 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                 } else if (pattern.equalsIgnoreCase("short")) {
                     return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, "H:mm:ss"));
                 } else if (pattern.equalsIgnoreCase("short-word")) {
+                    String maxUnitsStr = settings.get("maxUnits");
+                    if (maxUnitsStr != null) {
+                        try {
+                            int maxUnits = Integer.parseInt(maxUnitsStr);
+                            if (maxUnits > 0) {
+                                return toMillis.andThen(millis -> DurationTimeFormatters.formatDurationShortWord(millis, maxUnits));
+                            }
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
                     return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, "d'd 'H'h 'm'm 's's'"));
                 } else {
                     return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, pattern));

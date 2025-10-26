@@ -156,9 +156,9 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                 } else if (pattern.equalsIgnoreCase("word")) {
                     return toMillis.andThen(millis -> DurationTimeFormatters.formatDurationWords(millis, true, true));
                 } else if (pattern.equalsIgnoreCase("short")) {
-                    return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, "H:mm:ss"));
+                    return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, "[H:]mm:ss"));
                 } else if (pattern.equalsIgnoreCase("short-word")) {
-                    return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, "d'd 'H'h 'm'm 's's'"));
+                    return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, "[d'd 'H'h 'm'm 's's']"));
                 } else {
                     return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, pattern));
                 }

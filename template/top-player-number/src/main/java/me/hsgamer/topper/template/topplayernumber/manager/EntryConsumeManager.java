@@ -40,12 +40,21 @@ public class EntryConsumeManager {
         return providerMap.getOrDefault(group, Provider.DEFAULT);
     }
 
+    public Map<String, Provider> getProviderMap() {
+        return Collections.unmodifiableMap(providerMap);
+    }
+
     public void consume(Context context) {
         consumerList.forEach(consumer -> consumer.accept(context));
     }
 
     public void enable() {
         addProvider(NumberTopHolder.GROUP, new Provider() {
+            @Override
+            public Collection<String> getHolders() {
+                return template.getTopManager().getHolderNames();
+            }
+
             @Override
             public Optional<Double> getValue(String holder, UUID uuid) {
                 return template.getTopManager()
@@ -77,6 +86,10 @@ public class EntryConsumeManager {
     public interface Provider {
         Provider DEFAULT = new Provider() {
         };
+
+        default Collection<String> getHolders() {
+            return Collections.emptyList();
+        }
 
         default Optional<Double> getValue(String holder, UUID uuid) {
             return Optional.empty();

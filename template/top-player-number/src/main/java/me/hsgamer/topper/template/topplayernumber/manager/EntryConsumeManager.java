@@ -7,14 +7,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 public class EntryConsumeManager {
     private final TopPlayerNumberTemplate template;
     private final List<Consumer<Context>> consumerList = new ArrayList<>();
-    private final Map<String, BiFunction<String, UUID, Optional<Double>>> providerMap = new HashMap<>();
-    private final Map<String, BiFunction<String, UUID, Optional<String>>> nameProviderMap = new HashMap<>();
+    private final Map<String, Provider> providerMap = new HashMap<>();
 
     public EntryConsumeManager(TopPlayerNumberTemplate template) {
         this.template = template;
@@ -33,28 +31,13 @@ public class EntryConsumeManager {
         });
     }
 
-    public Runnable addProvider(String group, BiFunction<String, UUID, Optional<Double>> provider) {
+    public Runnable addProvider(String group, Provider provider) {
         providerMap.put(group, provider);
         return () -> providerMap.remove(group);
     }
 
-    public Runnable addNameProvider(String group, BiFunction<String, UUID, Optional<String>> nameProvider) {
-        nameProviderMap.put(group, nameProvider);
-        return () -> nameProviderMap.remove(group);
-    }
-
-    public Optional<Double> getValue(String group, String holder, UUID uuid) {
-        BiFunction<String, UUID, Optional<Double>> function = providerMap.get(group);
-        return function == null ? Optional.empty() : function.apply(holder, uuid);
-    }
-
-    public Optional<String> getName(String group, String holder, UUID uuid) {
-        BiFunction<String, UUID, Optional<String>> function = nameProviderMap.get(group);
-        return function == null ? Optional.empty() : function.apply(holder, uuid);
-    }
-
-    public String getNameOrDefault(String group, String holder, UUID uuid) {
-        return getName(group, holder, uuid).orElseGet(() -> template.getName(uuid));
+    public Provider getProvider(String group) {
+        return providerMap.getOrDefault(group, Provider.DEFAULT);
     }
 
     public void consume(Context context) {
@@ -62,17 +45,50 @@ public class EntryConsumeManager {
     }
 
     public void enable() {
-        addProvider(NumberTopHolder.GROUP, (holder, uuid) ->
-                template.getTopManager()
+        addProvider(NumberTopHolder.GROUP, new Provider() {
+            @Override
+            public Optional<Double> getValue(String holder, UUID uuid) {
+                return template.getTopManager()
                         .getHolder(holder)
                         .flatMap(h -> h.getEntry(uuid))
-                        .map(DataEntry::getValue)
-        );
+                        .map(DataEntry::getValue);
+            }
+
+            @Override
+            public Optional<String> getName(String holder, UUID uuid) {
+                return Optional.ofNullable(template.getName(uuid));
+            }
+
+            @Override
+            public Optional<Integer> getSnapshotIndex(String holder, UUID uuid) {
+                return template.getTopManager()
+                        .getHolder(holder)
+                        .map(NumberTopHolder::getSnapshotAgent)
+                        .map(agent -> agent.getSnapshotIndex(uuid));
+            }
+        });
     }
 
     public void disable() {
         consumerList.clear();
         providerMap.clear();
+    }
+
+    public interface Provider {
+        Provider DEFAULT = new Provider() {
+        };
+
+        default Optional<Double> getValue(String holder, UUID uuid) {
+            return Optional.empty();
+        }
+
+        default Optional<String> getName(String holder, UUID uuid) {
+            return Optional.empty();
+        }
+
+        default Optional<Integer> getSnapshotIndex(String holder, UUID uuid) {
+            return Optional.empty();
+        }
     }
 
     public static class Context {

@@ -66,12 +66,8 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
                     K key = entry.getKey();
                     UpdateStatus updateStatus = entry.getValue();
 
-                    if (updateStatus instanceof UpdateStatus.Skip) {
-                        UpdateStatus.Skip skipStatus = (UpdateStatus.Skip) updateStatus;
-                        if (skipStatus.skip()) {
-                            entry.setValue(skipStatus.decrement());
-                            continue;
-                        }
+                    if (updateStatus != UpdateStatus.DEFAULT && !(updateStatus instanceof UpdateStatus.Set)) {
+                        continue;
                     }
 
                     if (filter != null) {
@@ -122,11 +118,6 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
                     } catch (Exception e) {
                         break;
                     }
-                    UpdateStatus updateStatus = entry.getValue();
-
-                    if (updateStatus != UpdateStatus.RESET && !(updateStatus instanceof UpdateStatus.Set)) {
-                        continue;
-                    }
 
                     Optional<DataEntry<K, V>> optionalDataEntry = holder.getEntry(entry.getKey());
                     if (!optionalDataEntry.isPresent()) {
@@ -135,7 +126,11 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
                     }
                     DataEntry<K, V> dataEntry = optionalDataEntry.get();
 
-                    if (updateStatus == UpdateStatus.RESET) {
+                    UpdateStatus updateStatus = entry.getValue();
+                    if (updateStatus instanceof UpdateStatus.Skip) {
+                        UpdateStatus.Skip skipStatus = (UpdateStatus.Skip) updateStatus;
+                        entry.setValue(skipStatus.decrement());
+                    } else if (updateStatus == UpdateStatus.RESET) {
                         dataEntry.setValue((V) null);
                         entry.setValue(new UpdateStatus.Skip(maxSkips));
                     } else if (updateStatus instanceof UpdateStatus.Set) {

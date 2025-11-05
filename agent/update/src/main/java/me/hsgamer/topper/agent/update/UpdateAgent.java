@@ -105,41 +105,36 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
     }
 
     public Runnable getSetRunnable() {
-        return new Runnable() {
-            private final AtomicReference<Iterator<Map.Entry<K, UpdateStatus>>> iteratorRef = new AtomicReference<>();
+        return () -> {
+            Iterator<Map.Entry<K, UpdateStatus>> iterator = map.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<K, UpdateStatus> entry;
+                try {
+                    entry = iterator.next();
+                } catch (Exception e) {
+                    break;
+                }
 
-            @Override
-            public void run() {
-                Iterator<Map.Entry<K, UpdateStatus>> iterator = iteratorRef.updateAndGet(old -> old == null || !old.hasNext() ? map.entrySet().iterator() : old);
-                while (iterator.hasNext()) {
-                    Map.Entry<K, UpdateStatus> entry;
-                    try {
-                        entry = iterator.next();
-                    } catch (Exception e) {
-                        break;
-                    }
+                Optional<DataEntry<K, V>> optionalDataEntry = holder.getEntry(entry.getKey());
+                if (!optionalDataEntry.isPresent()) {
+                    iterator.remove();
+                    continue;
+                }
+                DataEntry<K, V> dataEntry = optionalDataEntry.get();
 
-                    Optional<DataEntry<K, V>> optionalDataEntry = holder.getEntry(entry.getKey());
-                    if (!optionalDataEntry.isPresent()) {
-                        iterator.remove();
-                        continue;
-                    }
-                    DataEntry<K, V> dataEntry = optionalDataEntry.get();
-
-                    UpdateStatus updateStatus = entry.getValue();
-                    if (updateStatus instanceof UpdateStatus.Skip) {
-                        UpdateStatus.Skip skipStatus = (UpdateStatus.Skip) updateStatus;
-                        entry.setValue(skipStatus.decrement());
-                    } else if (updateStatus == UpdateStatus.RESET) {
-                        dataEntry.setValue((V) null);
-                        entry.setValue(new UpdateStatus.Skip(maxSkips));
-                    } else if (updateStatus instanceof UpdateStatus.Set) {
-                        UpdateStatus.Set setStatus = (UpdateStatus.Set) updateStatus;
-                        //noinspection unchecked
-                        V value = (V) setStatus.getValue();
-                        dataEntry.setValue(value);
-                        entry.setValue(UpdateStatus.DEFAULT);
-                    }
+                UpdateStatus updateStatus = entry.getValue();
+                if (updateStatus instanceof UpdateStatus.Skip) {
+                    UpdateStatus.Skip skipStatus = (UpdateStatus.Skip) updateStatus;
+                    entry.setValue(skipStatus.decrement());
+                } else if (updateStatus == UpdateStatus.RESET) {
+                    dataEntry.setValue((V) null);
+                    entry.setValue(new UpdateStatus.Skip(maxSkips));
+                } else if (updateStatus instanceof UpdateStatus.Set) {
+                    UpdateStatus.Set setStatus = (UpdateStatus.Set) updateStatus;
+                    //noinspection unchecked
+                    V value = (V) setStatus.getValue();
+                    dataEntry.setValue(value);
+                    entry.setValue(UpdateStatus.DEFAULT);
                 }
             }
         };

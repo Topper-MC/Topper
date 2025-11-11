@@ -33,7 +33,7 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
 
         List<Agent> agents = new ArrayList<>();
         List<DataEntryAgent<UUID, Double>> entryAgents = new ArrayList<>();
-        this.valueDisplay = new ValueDisplay(template::getName, settings.displaySettings());
+        this.valueDisplay = new ValueDisplay(template.getNameProviderManager()::getName, settings.displaySettings());
 
         this.storageAgent = new StorageAgent<>(template.getTopManager().buildStorage(name));
         storageAgent.setMaxEntryPerCall(template.getSettings().taskSaveEntryPerTick());

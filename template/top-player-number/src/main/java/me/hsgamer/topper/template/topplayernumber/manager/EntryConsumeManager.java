@@ -65,7 +65,7 @@ public class EntryConsumeManager {
 
             @Override
             public Optional<String> getName(String holder, UUID uuid) {
-                return Optional.ofNullable(template.getName(uuid));
+                return Optional.ofNullable(template.getNameProviderManager().getName(uuid));
             }
 
             @Override

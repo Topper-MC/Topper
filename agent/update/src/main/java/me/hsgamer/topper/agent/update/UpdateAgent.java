@@ -125,7 +125,11 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
                 UpdateStatus updateStatus = entry.getValue();
                 if (updateStatus instanceof UpdateStatus.Skip) {
                     UpdateStatus.Skip skipStatus = (UpdateStatus.Skip) updateStatus;
-                    entry.setValue(skipStatus.decrement());
+                    if (skipStatus.skip()) {
+                        entry.setValue(skipStatus.decrement());
+                    } else {
+                        entry.setValue(UpdateStatus.DEFAULT);
+                    }
                 } else if (updateStatus == UpdateStatus.RESET) {
                     dataEntry.setValue((V) null);
                     entry.setValue(new UpdateStatus.Skip(maxSkips));

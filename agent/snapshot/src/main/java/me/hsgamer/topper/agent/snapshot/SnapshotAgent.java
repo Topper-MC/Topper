@@ -11,7 +11,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
-    private final AtomicReference<Snapshot<K, V>> snapshot = new AtomicReference<>(new Snapshot<>());
+    private final AtomicReference<Snapshot> snapshot = new AtomicReference<>(new Snapshot());
     private Predicate<Map.Entry<K, V>> filter = null;
     private Comparator<V> comparator;
 
@@ -35,12 +35,12 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
         Map<K, Integer> map = IntStream.range(0, list.size())
                 .boxed()
                 .collect(Collectors.toMap(i -> list.get(i).getKey(), i -> i));
-        snapshot.set(new Snapshot<>(list, map));
+        snapshot.set(new Snapshot(list, map));
     }
 
     @Override
     public void stop() {
-        snapshot.set(new Snapshot<>());
+        snapshot.set(new Snapshot());
     }
 
     public List<Map.Entry<K, V>> getUrgentSnapshot() {
@@ -76,7 +76,7 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
         this.filter = filter;
     }
 
-    private static final class Snapshot<K, V> {
+    private final class Snapshot {
         private final List<Map.Entry<K, V>> entryList;
         private final Map<K, Integer> indexMap;
 

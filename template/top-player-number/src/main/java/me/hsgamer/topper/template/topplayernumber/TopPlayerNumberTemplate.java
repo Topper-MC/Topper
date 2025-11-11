@@ -36,11 +36,7 @@ public abstract class TopPlayerNumberTemplate {
 
     public abstract Optional<ValueProvider<UUID, Double>> createValueProvider(Map<String, Object> settings);
 
-    public abstract boolean isOnline(UUID uuid);
-
     public abstract String getName(UUID uuid);
-
-    public abstract boolean hasPermission(UUID uuid, String permission);
 
     public abstract Agent createTaskAgent(Runnable runnable, boolean async, long delay);
 

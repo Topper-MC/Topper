@@ -49,23 +49,8 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         boolean isAsync = settings.async();
         boolean showErrors = settings.showErrors();
         boolean resetOnError = settings.resetOnError();
-        List<String> ignorePermissions = settings.ignorePermissions();
-        List<String> resetPermissions = settings.resetPermissions();
         this.updateAgent = new UpdateAgent<>(this, valueProvider);
-        if (!ignorePermissions.isEmpty() || !resetPermissions.isEmpty()) {
-            updateAgent.setFilter(uuid -> {
-                if (!template.isOnline(uuid)) {
-                    return UpdateAgent.FilterResult.SKIP;
-                }
-                if (!resetPermissions.isEmpty() && resetPermissions.stream().anyMatch(s -> template.hasPermission(uuid, s))) {
-                    return UpdateAgent.FilterResult.RESET;
-                }
-                if (!ignorePermissions.isEmpty() && ignorePermissions.stream().anyMatch(s -> template.hasPermission(uuid, s))) {
-                    return UpdateAgent.FilterResult.SKIP;
-                }
-                return UpdateAgent.FilterResult.CONTINUE;
-            });
-        }
+        this.updateAgent.setFilter(settings::filter);
         if (resetOnError) {
             updateAgent.setErrorHandler((uuid, valueWrapper) -> {
                 if (showErrors && valueWrapper.state == ValueWrapper.State.ERROR) {
@@ -154,9 +139,7 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
 
         boolean reverse();
 
-        List<String> ignorePermissions();
-
-        List<String> resetPermissions();
+        UpdateAgent.FilterResult filter(UUID uuid);
 
         Map<String, Object> valueProvider();
     }

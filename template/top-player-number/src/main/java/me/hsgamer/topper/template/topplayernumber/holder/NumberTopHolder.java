@@ -39,7 +39,7 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         storageAgent.setMaxEntryPerCall(template.getSettings().taskSaveEntryPerTick());
         agents.add(storageAgent);
         agents.add(storageAgent.getLoadAgent(this));
-        agents.add(template.createTaskAgent(storageAgent, true, template.getSettings().taskSaveDelay()));
+        agents.add(template.createTask(storageAgent, TaskType.STORAGE));
         entryAgents.add(storageAgent);
 
         ValueProvider<UUID, Double> valueProvider = template.createValueProvider(settings.valueProvider()).orElseGet(() -> {
@@ -67,15 +67,15 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         }
         updateAgent.setMaxSkips(template.getSettings().taskUpdateMaxSkips());
         entryAgents.add(updateAgent);
-        agents.add(template.createTaskAgent(updateAgent.getUpdateRunnable(template.getSettings().taskUpdateEntryPerTick()), isAsync, template.getSettings().taskUpdateDelay()));
-        agents.add(template.createTaskAgent(updateAgent.getSetRunnable(), true, template.getSettings().taskUpdateSetDelay()));
+        agents.add(template.createUpdateTask(updateAgent.getUpdateRunnable(template.getSettings().taskUpdateEntryPerTick()), isAsync));
+        agents.add(template.createTask(updateAgent.getSetRunnable(), TaskType.SET));
 
         this.snapshotAgent = SnapshotAgent.create(this);
         boolean reverseOrder = settings.reverse();
         snapshotAgent.setComparator(reverseOrder ? Comparator.naturalOrder() : Comparator.reverseOrder());
         snapshotAgent.setFilter(entry -> entry.getValue() != null);
         agents.add(snapshotAgent);
-        agents.add(template.createTaskAgent(snapshotAgent, true, 20L));
+        agents.add(template.createTask(snapshotAgent, TaskType.SNAPSHOT));
 
         entryAgents.add(new DataEntryAgent<UUID, Double>() {
             @Override
@@ -124,6 +124,12 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
 
     public ValueDisplay getValueDisplay() {
         return valueDisplay;
+    }
+
+    public enum TaskType {
+        STORAGE,
+        SET,
+        SNAPSHOT,
     }
 
     public interface Settings {

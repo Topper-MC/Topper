@@ -35,7 +35,9 @@ public abstract class TopPlayerNumberTemplate {
 
     public abstract Optional<ValueProvider<UUID, Double>> createValueProvider(Map<String, Object> settings);
 
-    public abstract Agent createTaskAgent(Runnable runnable, boolean async, long delay);
+    public abstract Agent createTask(Runnable runnable, NumberTopHolder.TaskType taskType);
+
+    public abstract Agent createUpdateTask(Runnable runnable, boolean async);
 
     public abstract void logWarning(String message, @Nullable Throwable throwable);
 
@@ -90,15 +92,9 @@ public abstract class TopPlayerNumberTemplate {
     public interface Settings {
         Map<String, NumberTopHolder.Settings> holders();
 
-        int taskSaveDelay();
-
         int taskSaveEntryPerTick();
 
         int taskUpdateEntryPerTick();
-
-        int taskUpdateDelay();
-
-        int taskUpdateSetDelay();
 
         int taskUpdateMaxSkips();
     }

@@ -16,22 +16,18 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryDisplay<K, V> {
-    private static final Pattern VALUE_PLACEHOLDER_PATTERN = Pattern.compile("\\{value(?:_(.*))?}");
     private static final String FORMAT_QUERY_DECIMAL = "decimal";
     private static final String FORMAT_QUERY_TIME = "time";
     private static final String FORMAT_QUERY_SHORTEN = "shorten";
     private static final Map<String, Function<Number, String>> displayByQueryCache = new ConcurrentHashMap<>();
 
-    private final String line;
     private final String displayNullValue;
 
-    protected NumberDisplay(String line, String displayNullValue) {
-        this.line = line;
+    protected NumberDisplay(String displayNullValue) {
         this.displayNullValue = displayNullValue;
     }
 
@@ -231,21 +227,5 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
         }
 
         return displayByQueryCache.computeIfAbsent(formatQuery, NumberDisplay::createDisplayFunction).apply(value);
-    }
-
-    public String getDisplayLine(int index /* 1-based */, @Nullable Map.Entry<K, V> entry) {
-        String line = this.line
-                .replace("{index}", String.valueOf(index))
-                .replace("{uuid}", getDisplayKey(entry == null ? null : entry.getKey()))
-                .replace("{name}", getDisplayName(entry == null ? null : entry.getKey()));
-
-        V value = entry == null ? null : entry.getValue();
-        Matcher matcher = VALUE_PLACEHOLDER_PATTERN.matcher(line);
-        while (matcher.find()) {
-            String formatType = matcher.group(1);
-            line = line.replace(matcher.group(), getDisplayValue(value, formatType));
-        }
-
-        return line;
     }
 }

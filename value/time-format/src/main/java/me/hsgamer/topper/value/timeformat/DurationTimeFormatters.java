@@ -1,10 +1,12 @@
 package me.hsgamer.topper.value.timeformat;
 
-import java.lang.reflect.Method;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 public final class DurationTimeFormatters {
-    private static final Method FORMAT_DURATION_METHOD;
-    private static final Method FORMAT_DURATION_WORDS_METHOD;
+    private static final MethodHandle FORMAT_DURATION_METHOD;
+    private static final MethodHandle FORMAT_DURATION_WORDS_METHOD;
 
     static {
         Class<?> clazz;
@@ -18,22 +20,24 @@ public final class DurationTimeFormatters {
             }
         }
 
-        Method method = null;
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+        MethodHandle method = null;
         if (clazz != null) {
             try {
-                method = clazz.getMethod("formatDuration", long.class, String.class);
-            } catch (NoSuchMethodException e) {
+                method = lookup.findStatic(clazz, "formatDuration", MethodType.methodType(String.class, long.class, String.class));
+            } catch (NoSuchMethodException | IllegalAccessException e) {
                 // Method not found, will return null
             }
         }
 
         FORMAT_DURATION_METHOD = method;
 
-        Method wordsMethod = null;
+        MethodHandle wordsMethod = null;
         if (clazz != null) {
             try {
-                wordsMethod = clazz.getMethod("formatDurationWords", long.class, boolean.class, boolean.class);
-            } catch (NoSuchMethodException e) {
+                wordsMethod = lookup.findStatic(clazz, "formatDurationWords", MethodType.methodType(String.class, long.class, boolean.class, boolean.class));
+            } catch (NoSuchMethodException | IllegalAccessException e) {
                 // Method not found, will return null
             }
         }
@@ -48,8 +52,8 @@ public final class DurationTimeFormatters {
     public static String formatDuration(long durationMillis, String format) {
         if (FORMAT_DURATION_METHOD != null) {
             try {
-                return (String) FORMAT_DURATION_METHOD.invoke(null, durationMillis, format);
-            } catch (Exception e) {
+                return (String) FORMAT_DURATION_METHOD.invokeExact(durationMillis, format);
+            } catch (Throwable e) {
                 return "INVALID FORMAT";
             }
         } else {
@@ -60,8 +64,8 @@ public final class DurationTimeFormatters {
     public static String formatDurationWords(long durationMillis, boolean suppressLeadingZeroElements, boolean suppressTrailingZeroElements) {
         if (FORMAT_DURATION_WORDS_METHOD != null) {
             try {
-                return (String) FORMAT_DURATION_WORDS_METHOD.invoke(null, durationMillis, suppressLeadingZeroElements, suppressTrailingZeroElements);
-            } catch (Exception e) {
+                return (String) FORMAT_DURATION_WORDS_METHOD.invokeExact(durationMillis, suppressLeadingZeroElements, suppressTrailingZeroElements);
+            } catch (Throwable e) {
                 return "INVALID FORMAT";
             }
         } else {

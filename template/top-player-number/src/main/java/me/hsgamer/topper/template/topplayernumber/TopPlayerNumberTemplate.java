@@ -65,6 +65,7 @@ public abstract class TopPlayerNumberTemplate {
         queryForwardManager.disable();
         entryConsumeManager.disable();
         topManager.disable();
+        reloadManager.clear();
     }
 
     public void reload() {

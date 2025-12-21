@@ -21,6 +21,7 @@ public abstract class TopPlayerNumberTemplate {
     private final EntryConsumeManager entryConsumeManager;
     private final QueryForwardManager queryForwardManager;
     private final NameProviderManager nameProviderManager;
+    private final ReloadManager reloadManager;
 
     protected TopPlayerNumberTemplate(Settings settings) {
         this.settings = settings;
@@ -29,6 +30,7 @@ public abstract class TopPlayerNumberTemplate {
         this.entryConsumeManager = new EntryConsumeManager(this);
         this.queryForwardManager = new QueryForwardManager(this);
         this.nameProviderManager = new NameProviderManager();
+        this.reloadManager = new ReloadManager();
     }
 
     public abstract Function<String, DataStorage<UUID, Double>> getStorageSupplier();
@@ -65,6 +67,14 @@ public abstract class TopPlayerNumberTemplate {
         topManager.disable();
     }
 
+    public void reload() {
+        reloadManager.call(ReloadManager.ReloadEntry::beforeReload);
+        topManager.disable();
+        reloadManager.call(ReloadManager.ReloadEntry::reload);
+        topManager.enable();
+        reloadManager.call(ReloadManager.ReloadEntry::afterReload);
+    }
+
     public Settings getSettings() {
         return settings;
     }
@@ -87,6 +97,10 @@ public abstract class TopPlayerNumberTemplate {
 
     public NameProviderManager getNameProviderManager() {
         return nameProviderManager;
+    }
+
+    public ReloadManager getReloadManager() {
+        return reloadManager;
     }
 
     public interface Settings {

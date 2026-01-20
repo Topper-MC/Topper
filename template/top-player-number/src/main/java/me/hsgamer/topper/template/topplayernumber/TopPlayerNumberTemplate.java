@@ -37,9 +37,7 @@ public abstract class TopPlayerNumberTemplate {
 
     public abstract Optional<ValueProvider<UUID, Double>> createValueProvider(Map<String, Object> settings);
 
-    public abstract Agent createTask(Runnable runnable, NumberTopHolder.TaskType taskType);
-
-    public abstract Agent createUpdateTask(Runnable runnable, boolean async);
+    public abstract Agent createTask(Runnable runnable, NumberTopHolder.TaskType taskType, Map<String, Object> settings);
 
     public abstract void logWarning(String message, @Nullable Throwable throwable);
 

@@ -39,14 +39,13 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         storageAgent.setMaxEntryPerCall(template.getSettings().taskSaveEntryPerTick());
         agents.add(storageAgent);
         agents.add(storageAgent.getLoadAgent(this));
-        agents.add(template.createTask(storageAgent, TaskType.STORAGE));
+        agents.add(template.createTask(storageAgent, TaskType.STORAGE, settings.valueProvider()));
         entryAgents.add(storageAgent);
 
         ValueProvider<UUID, Double> valueProvider = template.createValueProvider(settings.valueProvider()).orElseGet(() -> {
             template.logWarning("No value provider found for " + name);
             return ValueProvider.empty();
         });
-        boolean isAsync = settings.async();
         boolean showErrors = settings.showErrors();
         boolean resetOnError = settings.resetOnError();
         this.updateAgent = new UpdateAgent<>(this, valueProvider);
@@ -67,15 +66,15 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         }
         updateAgent.setMaxSkips(template.getSettings().taskUpdateMaxSkips());
         entryAgents.add(updateAgent);
-        agents.add(template.createUpdateTask(updateAgent.getUpdateRunnable(template.getSettings().taskUpdateEntryPerTick()), isAsync));
-        agents.add(template.createTask(updateAgent.getSetRunnable(), TaskType.SET));
+        agents.add(template.createTask(updateAgent.getUpdateRunnable(template.getSettings().taskUpdateEntryPerTick()), TaskType.UPDATE, settings.valueProvider()));
+        agents.add(template.createTask(updateAgent.getSetRunnable(), TaskType.SET, settings.valueProvider()));
 
         this.snapshotAgent = SnapshotAgent.create(this);
         boolean reverseOrder = settings.reverse();
         snapshotAgent.setComparator(reverseOrder ? Comparator.naturalOrder() : Comparator.reverseOrder());
         snapshotAgent.setFilter(entry -> entry.getValue() != null);
         agents.add(snapshotAgent);
-        agents.add(template.createTask(snapshotAgent, TaskType.SNAPSHOT));
+        agents.add(template.createTask(snapshotAgent, TaskType.SNAPSHOT, settings.valueProvider()));
 
         entryAgents.add(new DataEntryAgent<UUID, Double>() {
             @Override
@@ -130,14 +129,13 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         STORAGE,
         SET,
         SNAPSHOT,
+        UPDATE
     }
 
     public interface Settings {
         Double defaultValue();
 
         ValueDisplay.Settings displaySettings();
-
-        boolean async();
 
         boolean showErrors();
 

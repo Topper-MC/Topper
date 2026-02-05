@@ -20,11 +20,11 @@ me.hsgamer.topper.storage.sql.converter
 me.hsgamer.topper.storage.sql.core
 me.hsgamer.topper.storage.sql.mysql
 me.hsgamer.topper.storage.sql.sqlite
+me.hsgamer.topper.template.snapshotdisplayline
 me.hsgamer.topper.template.storagesupplier
 me.hsgamer.topper.template.storagesupplier.storage
 me.hsgamer.topper.template.topplayernumber
 me.hsgamer.topper.template.topplayernumber.holder
-me.hsgamer.topper.template.topplayernumber.holder.display
 me.hsgamer.topper.template.topplayernumber.manager
 me.hsgamer.topper.value.core
 me.hsgamer.topper.value.string

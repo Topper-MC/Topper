@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>me.hsgamer</groupId>
+        <artifactId>topper-template</artifactId>
+        <version>4.15.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>snapshot-display-line</artifactId>
+    <name>Topper Template - Snapshot Display Line</name>
+    <description>A Topper template to display snapshot entry in one line</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
+            <artifactId>topper-agent-snapshot</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>me.hsgamer</groupId>
+            <artifactId>topper-query-simple</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>

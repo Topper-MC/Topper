@@ -15,5 +15,6 @@
     <modules>
         <module>top-player-number</module>
         <module>storage-supplier</module>
+        <module>snapshot-display-line</module>
     </modules>
 </project>

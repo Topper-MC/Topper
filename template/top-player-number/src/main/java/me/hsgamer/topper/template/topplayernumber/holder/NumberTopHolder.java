@@ -8,11 +8,12 @@ import me.hsgamer.topper.agent.storage.StorageAgent;
 import me.hsgamer.topper.agent.update.UpdateAgent;
 import me.hsgamer.topper.data.core.DataEntry;
 import me.hsgamer.topper.data.simple.SimpleDataHolder;
+import me.hsgamer.topper.query.display.number.NumberDisplay;
 import me.hsgamer.topper.template.topplayernumber.TopPlayerNumberTemplate;
-import me.hsgamer.topper.template.topplayernumber.holder.display.ValueDisplay;
 import me.hsgamer.topper.template.topplayernumber.manager.EntryConsumeManager;
 import me.hsgamer.topper.value.core.ValueProvider;
 import me.hsgamer.topper.value.core.ValueWrapper;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -20,7 +21,7 @@ import java.util.*;
 public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements AgentHolder<UUID, Double> {
     public static final String GROUP = "topper";
 
-    private final ValueDisplay valueDisplay;
+    private final NumberDisplay<UUID, Double> valueDisplay;
     private final List<Agent> agents;
     private final List<DataEntryAgent<UUID, Double>> entryAgents;
     private final StorageAgent<UUID, Double> storageAgent;
@@ -33,7 +34,17 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
 
         List<Agent> agents = new ArrayList<>();
         List<DataEntryAgent<UUID, Double>> entryAgents = new ArrayList<>();
-        this.valueDisplay = new ValueDisplay(template.getNameProviderManager()::getName, settings.displaySettings());
+        this.valueDisplay = new NumberDisplay<UUID, Double>(settings.displayNullValue()) {
+            @Override
+            public @NotNull String getDisplayName(@Nullable UUID uuid) {
+                return Optional.ofNullable(uuid).map(template.getNameProviderManager()::getName).orElse(settings.displayNullName());
+            }
+
+            @Override
+            public @NotNull String getDisplayKey(@Nullable UUID uuid) {
+                return uuid != null ? uuid.toString() : settings.displayNullUuid();
+            }
+        };
 
         this.storageAgent = new StorageAgent<>(template.getTopManager().buildStorage(name));
         storageAgent.setMaxEntryPerCall(template.getSettings().taskSaveEntryPerTick());
@@ -121,7 +132,7 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         return snapshotAgent;
     }
 
-    public ValueDisplay getValueDisplay() {
+    public NumberDisplay<UUID, Double> getValueDisplay() {
         return valueDisplay;
     }
 
@@ -135,7 +146,11 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
     public interface Settings {
         Double defaultValue();
 
-        ValueDisplay.Settings displaySettings();
+        String displayNullName();
+
+        String displayNullUuid();
+
+        String displayNullValue();
 
         boolean showErrors();
 

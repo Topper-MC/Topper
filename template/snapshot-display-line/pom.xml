@@ -9,7 +9,7 @@
         <version>4.15.0</version>
     </parent>
 
-    <artifactId>snapshot-display-line</artifactId>
+    <artifactId>topper-template-snapshot-display-line</artifactId>
     <name>Topper Template - Snapshot Display Line</name>
     <description>A Topper template to display snapshot entry in one line</description>
 

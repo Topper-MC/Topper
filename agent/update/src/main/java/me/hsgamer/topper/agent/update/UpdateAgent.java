@@ -12,11 +12,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
     private final DataHolder<K, V> holder;
-    private final Function<K, ValueWrapper<V>> updateFunction;
+    private final BiConsumer<K, Consumer<ValueWrapper<V>>> updateConsumer;
 
     private final Map<K, UpdateStatus> map = new ConcurrentHashMap<>();
 
@@ -24,9 +25,13 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
     private BiFunction<K, ValueWrapper<V>, ValueWrapper<V>> errorHandler = null;
     private int maxSkips = 1;
 
-    public UpdateAgent(DataHolder<K, V> holder, Function<K, ValueWrapper<V>> updateFunction) {
+    public UpdateAgent(DataHolder<K, V> holder, BiConsumer<K, Consumer<ValueWrapper<V>>> updateConsumer) {
         this.holder = holder;
-        this.updateFunction = updateFunction;
+        this.updateConsumer = updateConsumer;
+    }
+
+    public UpdateAgent(DataHolder<K, V> holder, Function<K, ValueWrapper<V>> updateFunction) {
+        this(holder, (key, consumer) -> consumer.accept(updateFunction.apply(key)));
     }
 
     public void setFilter(Function<K, FilterResult> filter) {
@@ -48,6 +53,21 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
         this.maxSkips = maxSkips;
     }
 
+    private void setValueEntry(ValueWrapper<V> valueWrapper, Map.Entry<K, UpdateStatus> entry) {
+        if (errorHandler != null && valueWrapper.state == ValueWrapper.State.ERROR) {
+            valueWrapper = errorHandler.apply(entry.getKey(), valueWrapper);
+        }
+        switch (valueWrapper.state) {
+            case ERROR:
+            case NOT_HANDLED:
+                entry.setValue(new UpdateStatus.Skip(maxSkips));
+                break;
+            default:
+                entry.setValue(new UpdateStatus.Set(valueWrapper.value));
+                break;
+        }
+    }
+
     public Runnable getUpdateRunnable(int maxEntryPerCall) {
         return new Runnable() {
             private final AtomicReference<Iterator<Map.Entry<K, UpdateStatus>>> iteratorRef = new AtomicReference<>();
@@ -65,6 +85,12 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
                     }
                     K key = entry.getKey();
                     UpdateStatus updateStatus = entry.getValue();
+
+                    if (updateStatus instanceof UpdateStatus.Value) {
+                        ValueWrapper<V> valueWrapper = ((UpdateStatus.Value) updateStatus).get();
+                        setValueEntry(valueWrapper, entry);
+                        continue;
+                    }
 
                     if (updateStatus != UpdateStatus.DEFAULT && !(updateStatus instanceof UpdateStatus.Set)) {
                         continue;
@@ -85,19 +111,15 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
                         }
                     }
 
-                    ValueWrapper<V> valueWrapper = updateFunction.apply(key);
-                    if (errorHandler != null && valueWrapper.state == ValueWrapper.State.ERROR) {
-                        valueWrapper = errorHandler.apply(key, valueWrapper);
+                    entry.setValue(UpdateStatus.UPDATING);
+                    updateConsumer.accept(key, valueWrapper -> entry.setValue(new UpdateStatus.Value(valueWrapper)));
+
+                    UpdateStatus afterUpdateStatus = entry.getValue();
+                    if (afterUpdateStatus instanceof UpdateStatus.Value) {
+                        ValueWrapper<V> valueWrapper = ((UpdateStatus.Value) afterUpdateStatus).get();
+                        setValueEntry(valueWrapper, entry);
                     }
-                    switch (valueWrapper.state) {
-                        case ERROR:
-                        case NOT_HANDLED:
-                            entry.setValue(new UpdateStatus.Skip(maxSkips));
-                            break;
-                        default:
-                            entry.setValue(new UpdateStatus.Set(valueWrapper.value));
-                            break;
-                    }
+
                     count++;
                 }
             }

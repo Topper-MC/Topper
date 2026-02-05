@@ -1,9 +1,13 @@
 package me.hsgamer.topper.agent.update;
 
+import me.hsgamer.topper.value.core.ValueWrapper;
+
 interface UpdateStatus {
     UpdateStatus DEFAULT = new UpdateStatus() {
     };
     UpdateStatus RESET = new UpdateStatus() {
+    };
+    UpdateStatus UPDATING = new UpdateStatus() {
     };
 
     class Skip implements UpdateStatus {
@@ -31,6 +35,19 @@ interface UpdateStatus {
 
         public Object getValue() {
             return value;
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    class Value implements UpdateStatus {
+        private final ValueWrapper wrapper;
+
+        public Value(ValueWrapper wrapper) {
+            this.wrapper = wrapper;
+        }
+
+        public <V> ValueWrapper<V> get() {
+            return wrapper;
         }
     }
 }

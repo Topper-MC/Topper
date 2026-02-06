@@ -30,10 +30,6 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
         this.updateConsumer = updateConsumer;
     }
 
-    public UpdateAgent(DataHolder<K, V> holder, Function<K, ValueWrapper<V>> updateFunction) {
-        this(holder, (key, consumer) -> consumer.accept(updateFunction.apply(key)));
-    }
-
     public void setFilter(Function<K, FilterResult> filter) {
         this.filter = filter;
     }

@@ -3,58 +3,62 @@ package me.hsgamer.topper.value.core;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
-public interface ValueProvider<K, V> extends Function<K, ValueWrapper<V>> {
+public interface ValueProvider<K, V> extends BiConsumer<K, Consumer<ValueWrapper<V>>> {
     static <K, V> ValueProvider<K, V> empty() {
-        return k -> ValueWrapper.notHandled();
+        return (k, callback) -> callback.accept(ValueWrapper.notHandled());
     }
 
     static <K, V> ValueProvider<K, V> simple(Function<@NotNull K, @Nullable V> function) {
-        return k -> {
+        return (k, callback) -> {
             try {
-                return ValueWrapper.handled(function.apply(k));
+                callback.accept(ValueWrapper.handled(function.apply(k)));
             } catch (Throwable e) {
-                return ValueWrapper.error("An error occurred while getting the value", e);
+                callback.accept(ValueWrapper.error("An error occurred while getting the value", e));
             }
         };
     }
 
     static <K, V> ValueProvider<K, V> error(@NotNull String errorMessage) {
-        return k -> ValueWrapper.error(errorMessage);
+        return (k, callback) -> callback.accept(ValueWrapper.error(errorMessage));
     }
 
     @Override
-    @NotNull ValueWrapper<V> apply(@NotNull K key);
+    void accept(K k, Consumer<ValueWrapper<V>> callback);
 
     default <RK> ValueProvider<RK, V> beforeApply(Function<@NotNull RK, @Nullable K> mapper) {
-        return rawKey -> {
+        return (rawKey, callback) -> {
             try {
                 K key = mapper.apply(rawKey);
                 if (key == null) {
-                    return ValueWrapper.notHandled();
+                    callback.accept(ValueWrapper.notHandled());
+                    return;
                 }
-                return apply(key);
+                accept(key, callback);
             } catch (Throwable e) {
-                return ValueWrapper.error("An error occurred while mapping the key", e);
+                callback.accept(ValueWrapper.error("An error occurred while mapping the key", e));
             }
         };
     }
 
     default <F> ValueProvider<K, F> thenApply(Function<@NotNull V, @Nullable F> mapper) {
-        return key -> {
-            ValueWrapper<V> wrapper = apply(key);
+        return (key, callback) -> accept(key, wrapper -> {
             if (!wrapper.isHandled()) {
-                return ValueWrapper.copyNullWrapper(wrapper);
+                callback.accept(ValueWrapper.copyNullWrapper(wrapper));
+                return;
             }
             if (wrapper.value == null) {
-                return ValueWrapper.error("The raw value is null");
+                callback.accept(ValueWrapper.error("The raw value is null"));
+                return;
             }
             try {
-                return ValueWrapper.handled(mapper.apply(wrapper.value));
+                callback.accept(ValueWrapper.handled(mapper.apply(wrapper.value)));
             } catch (Throwable e) {
-                return ValueWrapper.error("An error occurred while converting the raw value", e);
+                callback.accept(ValueWrapper.error("An error occurred while converting the raw value", e));
             }
-        };
+        });
     }
 }

@@ -31,16 +31,18 @@ public interface ValueProvider<K, V> extends BiConsumer<K, Consumer<ValueWrapper
 
     default <RK> ValueProvider<RK, V> beforeApply(Function<@NotNull RK, @Nullable K> mapper) {
         return (rawKey, callback) -> {
+            K key;
             try {
-                K key = mapper.apply(rawKey);
+                key = mapper.apply(rawKey);
                 if (key == null) {
                     callback.accept(ValueWrapper.notHandled());
                     return;
                 }
-                accept(key, callback);
             } catch (Throwable e) {
                 callback.accept(ValueWrapper.error("An error occurred while mapping the key", e));
+                return;
             }
+            accept(key, callback);
         };
     }
 

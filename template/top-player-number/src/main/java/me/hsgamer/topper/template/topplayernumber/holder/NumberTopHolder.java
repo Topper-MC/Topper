@@ -21,6 +21,8 @@ import java.util.*;
 public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements AgentHolder<UUID, Double> {
     public static final String GROUP = "topper";
 
+    private final String name;
+    private final Settings settings;
     private final NumberDisplay<UUID, Double> valueDisplay;
     private final List<Agent> agents;
     private final List<DataEntryAgent<UUID, Double>> entryAgents;
@@ -30,6 +32,8 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
     private final Double defaultValue;
 
     public NumberTopHolder(TopPlayerNumberTemplate template, String name, Settings settings) {
+        this.name = name;
+        this.settings = settings;
         this.defaultValue = settings.defaultValue();
 
         List<Agent> agents = new ArrayList<>();
@@ -134,6 +138,14 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
 
     public NumberDisplay<UUID, Double> getValueDisplay() {
         return valueDisplay;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Settings getSettings() {
+        return settings;
     }
 
     public enum TaskType {

@@ -34,7 +34,20 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
     public NumberTopHolder(TopPlayerNumberTemplate template, String name, Settings settings) {
         this.name = name;
         this.settings = settings;
-        this.defaultValue = settings.defaultValue();
+
+        ValueWrapper<Double> defaultValueWrapper = settings.defaultValue();
+        switch (defaultValueWrapper.state) {
+            case HANDLED:
+                this.defaultValue = defaultValueWrapper.value;
+                break;
+            case ERROR:
+                template.logWarning("Error when parsing default value in " + name + " - " + defaultValueWrapper.errorMessage, defaultValueWrapper.throwable);
+                this.defaultValue = null;
+                break;
+            default:
+                this.defaultValue = null;
+                break;
+        }
 
         List<Agent> agents = new ArrayList<>();
         List<DataEntryAgent<UUID, Double>> entryAgents = new ArrayList<>();
@@ -169,7 +182,7 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
     }
 
     public interface Settings {
-        Double defaultValue();
+        ValueWrapper<Double> defaultValue();
 
         String displayNullName();
 

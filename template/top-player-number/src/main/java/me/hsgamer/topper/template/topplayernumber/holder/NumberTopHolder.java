@@ -38,7 +38,7 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
 
         List<Agent> agents = new ArrayList<>();
         List<DataEntryAgent<UUID, Double>> entryAgents = new ArrayList<>();
-        this.valueDisplay = new NumberDisplay<UUID, Double>(settings.displayNullValue()) {
+        this.valueDisplay = new NumberDisplay<UUID, Double>() {
             @Override
             public @NotNull String getDisplayName(@Nullable UUID uuid) {
                 return Optional.ofNullable(uuid).map(template.getNameProviderManager()::getName).orElse(settings.displayNullName());
@@ -47,6 +47,19 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
             @Override
             public @NotNull String getDisplayKey(@Nullable UUID uuid) {
                 return uuid != null ? uuid.toString() : settings.displayNullUuid();
+            }
+
+            @Override
+            public @NotNull String getDisplayNullValue() {
+                return settings.displayNullValue();
+            }
+
+            @Override
+            public @NotNull String getDisplayValue(@Nullable Double value, @NotNull String formatQuery) {
+                if (formatQuery.isEmpty()) {
+                    formatQuery = settings.defaultValueDisplay();
+                }
+                return super.getDisplayValue(value, formatQuery);
             }
         };
 
@@ -163,6 +176,10 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         String displayNullUuid();
 
         String displayNullValue();
+
+        default String defaultValueDisplay() {
+            return "";
+        }
 
         boolean showErrors();
 

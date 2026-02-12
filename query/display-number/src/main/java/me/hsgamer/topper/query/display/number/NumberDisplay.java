@@ -25,12 +25,6 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
     private static final String FORMAT_QUERY_SHORTEN = "shorten";
     private static final Map<String, Function<Number, String>> displayByQueryCache = new ConcurrentHashMap<>();
 
-    private final String displayNullValue;
-
-    protected NumberDisplay(String displayNullValue) {
-        this.displayNullValue = displayNullValue;
-    }
-
     private static Map<String, String> getSettings(String query) {
         if (query.isEmpty()) {
             return Collections.emptyMap();
@@ -211,10 +205,12 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
         }
     }
 
+    public abstract @NotNull String getDisplayNullValue();
+
     @Override
     public @NotNull String getDisplayValue(@Nullable V value, @NotNull String formatQuery) {
         if (value == null) {
-            return displayNullValue;
+            return getDisplayNullValue();
         }
 
         if (formatQuery.isEmpty()) {

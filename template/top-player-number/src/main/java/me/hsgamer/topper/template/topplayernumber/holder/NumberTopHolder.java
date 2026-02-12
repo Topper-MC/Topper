@@ -204,4 +204,90 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
 
         Map<String, Object> valueProvider();
     }
+
+    public static abstract class MapSettings implements Settings {
+        protected final Map<String, Object> map;
+
+        protected MapSettings(Map<String, Object> map) {
+            this.map = map;
+        }
+
+        @Override
+        public ValueWrapper<Double> defaultValue() {
+            Object value = map.get("default-value");
+            if (value == null) {
+                return ValueWrapper.notHandled();
+            }
+
+            try {
+                double numberValue = Double.parseDouble(Objects.toString(value));
+                return ValueWrapper.handled(numberValue);
+            } catch (Exception e) {
+                return ValueWrapper.error("Invalid number: \"" + value + "\". Fallback to null", e);
+            }
+        }
+
+        @Override
+        public String defaultValueDisplay() {
+            return Optional.ofNullable(map.get("default-value-display"))
+                    .map(Object::toString)
+                    .orElse(Settings.super.defaultValueDisplay());
+        }
+
+        @Override
+        public String displayNullName() {
+            return Optional.ofNullable(map.get("null-name"))
+                    .map(Object::toString)
+                    .orElse("---");
+        }
+
+        @Override
+        public String displayNullUuid() {
+            return Optional.ofNullable(map.get("null-uuid"))
+                    .map(Object::toString)
+                    .orElse("---");
+        }
+
+        @Override
+        public String displayNullValue() {
+            return Optional.ofNullable(map.get("null-value"))
+                    .map(Object::toString)
+                    .orElse("---");
+        }
+
+        @Override
+        public boolean showErrors() {
+            return Optional.ofNullable(map.get("show-errors"))
+                    .map(Object::toString)
+                    .map(String::toLowerCase)
+                    .map(Boolean::parseBoolean)
+                    .orElse(false);
+        }
+
+        @Override
+        public boolean resetOnError() {
+            return Optional.ofNullable(map.get("reset-on-error"))
+                    .map(Object::toString)
+                    .map(String::toLowerCase)
+                    .map(Boolean::parseBoolean)
+                    .orElse(true);
+        }
+
+        @Override
+        public boolean reverse() {
+            return Optional.ofNullable(map.get("reverse"))
+                    .map(String::valueOf)
+                    .map(Boolean::parseBoolean)
+                    .orElse(false);
+        }
+
+        @Override
+        public Map<String, Object> valueProvider() {
+            return map;
+        }
+
+        public Map<String, Object> map() {
+            return map;
+        }
+    }
 }

@@ -212,12 +212,12 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
     }
 
     @Override
-    public @NotNull String getDisplayValue(@Nullable V value, @Nullable String formatQuery) {
+    public @NotNull String getDisplayValue(@Nullable V value, @NotNull String formatQuery) {
         if (value == null) {
             return displayNullValue;
         }
 
-        if (formatQuery == null) {
+        if (formatQuery.isEmpty()) {
             DecimalFormat decimalFormat = new DecimalFormat("#.##");
             return decimalFormat.format(value);
         }

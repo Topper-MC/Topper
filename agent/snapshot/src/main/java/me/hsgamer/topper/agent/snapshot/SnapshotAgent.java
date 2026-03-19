@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
+    private final AtomicReference<List<Map.Entry<K, V>>> entryList = new AtomicReference<>(null);
     private final AtomicReference<Snapshot> snapshot = new AtomicReference<>(new Snapshot());
     private Predicate<Map.Entry<K, V>> filter = null;
     private Comparator<V> comparator;
@@ -24,18 +25,45 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
                         .stream()
                         .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue().getValue()));
             }
+
+            @Override
+            protected boolean needUpdate() {
+                return true;
+            }
         };
     }
 
     protected abstract Stream<Map.Entry<K, V>> getDataStream();
 
+    protected abstract boolean needUpdate();
+
     @Override
     public void run() {
-        List<Map.Entry<K, V>> list = getUrgentSnapshot();
-        Map<K, Integer> map = IntStream.range(0, list.size())
+        boolean isUpdate = needUpdate();
+        List<Map.Entry<K, V>> currentEntryList = entryList.get();
+        if (filter == null && !isUpdate && currentEntryList != null) {
+            return;
+        }
+
+        final List<Map.Entry<K, V>> list;
+        if (isUpdate || currentEntryList == null) {
+            list = getUrgentSnapshot();
+            entryList.set(list);
+        } else {
+            list = currentEntryList;
+        }
+
+        final List<Map.Entry<K, V>> resultList;
+        if (filter != null) {
+            resultList = list.stream().filter(filter).collect(Collectors.toList());
+        } else {
+            resultList = list;
+        }
+
+        Map<K, Integer> map = IntStream.range(0, resultList.size())
                 .boxed()
-                .collect(Collectors.toMap(i -> list.get(i).getKey(), i -> i));
-        snapshot.set(new Snapshot(list, map));
+                .collect(Collectors.toMap(i -> resultList.get(i).getKey(), i -> i));
+        snapshot.set(new Snapshot(resultList, map));
     }
 
     @Override
@@ -45,9 +73,6 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
 
     public List<Map.Entry<K, V>> getUrgentSnapshot() {
         Stream<Map.Entry<K, V>> stream = getDataStream();
-        if (filter != null) {
-            stream = stream.filter(filter);
-        }
         if (comparator != null) {
             stream = stream.sorted(Map.Entry.comparingByValue(comparator));
         }

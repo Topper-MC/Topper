@@ -4,6 +4,7 @@ import me.hsgamer.topper.agent.core.Agent;
 import me.hsgamer.topper.agent.core.AgentHolder;
 import me.hsgamer.topper.agent.core.DataEntryAgent;
 import me.hsgamer.topper.agent.snapshot.SnapshotAgent;
+import me.hsgamer.topper.agent.snapshot.SnapshotHolderAgent;
 import me.hsgamer.topper.agent.storage.StorageAgent;
 import me.hsgamer.topper.agent.update.UpdateAgent;
 import me.hsgamer.topper.data.core.DataEntry;
@@ -28,7 +29,7 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
     private final List<DataEntryAgent<UUID, Double>> entryAgents;
     private final StorageAgent<UUID, Double> storageAgent;
     private final UpdateAgent<UUID, Double> updateAgent;
-    private final SnapshotAgent<UUID, Double> snapshotAgent;
+    private final SnapshotHolderAgent<UUID, Double> snapshotAgent;
     private final Double defaultValue;
 
     public NumberTopHolder(TopPlayerNumberTemplate template, String name, Settings settings) {
@@ -110,11 +111,12 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         agents.add(template.createTask(updateAgent.getUpdateRunnable(template.getSettings().taskUpdateEntryPerTick()), TaskType.UPDATE, settings.valueProvider()));
         agents.add(template.createTask(updateAgent.getSetRunnable(), TaskType.SET, settings.valueProvider()));
 
-        this.snapshotAgent = SnapshotAgent.create(this);
+        this.snapshotAgent = new SnapshotHolderAgent<>(this);
         boolean reverseOrder = settings.reverse();
         snapshotAgent.setComparator(reverseOrder ? Comparator.naturalOrder() : Comparator.reverseOrder());
         snapshotAgent.setFilter(entry -> entry.getValue() != null);
         agents.add(snapshotAgent);
+        entryAgents.add(snapshotAgent);
         agents.add(template.createTask(snapshotAgent, TaskType.SNAPSHOT, settings.valueProvider()));
 
         entryAgents.add(new DataEntryAgent<UUID, Double>() {

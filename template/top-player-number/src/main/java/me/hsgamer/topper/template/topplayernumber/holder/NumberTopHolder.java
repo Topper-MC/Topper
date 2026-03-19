@@ -114,7 +114,7 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         this.snapshotAgent = new SnapshotHolderAgent<>(this);
         boolean reverseOrder = settings.reverse();
         snapshotAgent.setComparator(reverseOrder ? Comparator.naturalOrder() : Comparator.reverseOrder());
-        snapshotAgent.setFilter(entry -> entry.getValue() != null);
+        snapshotAgent.setDataFilter(entry -> entry.getValue() != null);
         agents.add(snapshotAgent);
         entryAgents.add(snapshotAgent);
         agents.add(template.createTask(snapshotAgent, TaskType.SNAPSHOT, settings.valueProvider()));

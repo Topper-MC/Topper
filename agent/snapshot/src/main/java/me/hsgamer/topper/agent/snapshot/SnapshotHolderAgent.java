@@ -7,22 +7,29 @@ import me.hsgamer.topper.data.core.DataHolder;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class SnapshotHolderAgent<K, V> extends SnapshotAgent<K, V> implements DataEntryAgent<K, V> {
     private final DataHolder<K, V> holder;
     private final AtomicBoolean needUpdating = new AtomicBoolean(true);
+    private Predicate<DataEntry<K, V>> dataFilter = null;
 
     public SnapshotHolderAgent(DataHolder<K, V> holder) {
         this.holder = holder;
     }
 
+    public void setDataFilter(Predicate<DataEntry<K, V>> dataFilter) {
+        this.dataFilter = dataFilter;
+    }
+
     @Override
     protected Stream<Map.Entry<K, V>> getDataStream() {
-        return holder.getEntryMap()
-                .entrySet()
-                .stream()
-                .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue().getValue()));
+        Stream<Map.Entry<K, DataEntry<K, V>>> stream = holder.getEntryMap().entrySet().stream();
+        if (dataFilter != null) {
+            stream = stream.filter(entry -> dataFilter.test(entry.getValue()));
+        }
+        return stream.map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue().getValue()));
     }
 
     @Override

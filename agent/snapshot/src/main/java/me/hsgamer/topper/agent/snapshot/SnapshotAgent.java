@@ -1,37 +1,15 @@
 package me.hsgamer.topper.agent.snapshot;
 
 import me.hsgamer.topper.agent.core.Agent;
-import me.hsgamer.topper.data.core.DataHolder;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
-    private final AtomicReference<List<Map.Entry<K, V>>> entryList = new AtomicReference<>(null);
-    private final AtomicReference<Snapshot> snapshot = new AtomicReference<>(new Snapshot());
-    private Predicate<Map.Entry<K, V>> filter = null;
+    private final AtomicReference<Snapshot<K, V>> snapshot = new AtomicReference<>(null);
     private Comparator<V> comparator;
-
-    public static <K, V> SnapshotAgent<K, V> create(DataHolder<K, V> holder) {
-        return new SnapshotAgent<K, V>() {
-            @Override
-            protected Stream<Map.Entry<K, V>> getDataStream() {
-                return holder.getEntryMap()
-                        .entrySet()
-                        .stream()
-                        .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue().getValue()));
-            }
-
-            @Override
-            protected boolean needUpdate() {
-                return true;
-            }
-        };
-    }
 
     protected abstract Stream<Map.Entry<K, V>> getDataStream();
 
@@ -39,36 +17,22 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
 
     @Override
     public void run() {
-        boolean isUpdate = needUpdate();
-        List<Map.Entry<K, V>> currentEntryList = entryList.get();
-        if (filter == null && !isUpdate && currentEntryList != null) {
+        Snapshot<K, V> currentSnapshot = snapshot.get();
+        if (currentSnapshot != null && !needUpdate()) {
             return;
         }
 
-        final List<Map.Entry<K, V>> list;
-        if (isUpdate || currentEntryList == null) {
-            list = getUrgentSnapshot();
-            entryList.set(list);
-        } else {
-            list = currentEntryList;
+        List<Map.Entry<K, V>> list = getUrgentSnapshot();
+        Map<K, Integer> map = new HashMap<>(list.size());
+        for (int i = 0; i < list.size(); i++) {
+            map.put(list.get(i).getKey(), i);
         }
-
-        final List<Map.Entry<K, V>> resultList;
-        if (filter != null) {
-            resultList = list.stream().filter(filter).collect(Collectors.toList());
-        } else {
-            resultList = list;
-        }
-
-        Map<K, Integer> map = IntStream.range(0, resultList.size())
-                .boxed()
-                .collect(Collectors.toMap(i -> resultList.get(i).getKey(), i -> i));
-        snapshot.set(new Snapshot(resultList, map));
+        snapshot.set(new Snapshot<>(list, map));
     }
 
     @Override
     public void stop() {
-        snapshot.set(new Snapshot());
+        snapshot.set(null);
     }
 
     public List<Map.Entry<K, V>> getUrgentSnapshot() {
@@ -80,11 +44,13 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
     }
 
     public List<Map.Entry<K, V>> getSnapshot() {
-        return snapshot.get().entryList;
+        Snapshot<K, V> s = snapshot.get();
+        return s == null ? Collections.emptyList() : s.entryList;
     }
 
     public int getSnapshotIndex(K key) {
-        return snapshot.get().indexMap.getOrDefault(key, -1);
+        Snapshot<K, V> s = snapshot.get();
+        return s == null ? -1 : s.indexMap.getOrDefault(key, -1);
     }
 
     public Optional<Map.Entry<K, V>> getSnapshotByIndex(int index) {
@@ -97,21 +63,13 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
         this.comparator = comparator;
     }
 
-    public void setFilter(Predicate<Map.Entry<K, V>> filter) {
-        this.filter = filter;
-    }
-
-    private final class Snapshot {
+    private static final class Snapshot<K, V> {
         private final List<Map.Entry<K, V>> entryList;
         private final Map<K, Integer> indexMap;
 
         private Snapshot(List<Map.Entry<K, V>> entryList, Map<K, Integer> indexMap) {
             this.entryList = entryList;
             this.indexMap = indexMap;
-        }
-
-        private Snapshot() {
-            this(Collections.emptyList(), Collections.emptyMap());
         }
     }
 }

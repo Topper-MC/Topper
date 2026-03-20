@@ -30,6 +30,9 @@ public interface SnapshotDisplayLine<K, V> {
         Matcher matcher = VALUE_PLACEHOLDER_PATTERN.matcher(line);
         while (matcher.find()) {
             String formatType = matcher.group(1);
+            if (formatType == null) {
+                formatType = "";
+            }
             line = line.replace(matcher.group(), display.getDisplayValue(value, formatType));
         }
 

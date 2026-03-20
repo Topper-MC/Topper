@@ -44,6 +44,11 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
     }
 
     private static Function<Number, String> createDisplayFunction(String formatQuery) {
+        if (formatQuery.isEmpty()) {
+            ThreadLocal<DecimalFormat> threadLocalFormat = ThreadLocal.withInitial(() -> new DecimalFormat("#.##"));
+            return n -> threadLocalFormat.get().format(n);
+        }
+
         if (formatQuery.startsWith(FORMAT_QUERY_SHORTEN)) {
             String config = formatQuery.substring(FORMAT_QUERY_SHORTEN.length());
             NavigableMap<Double, String> suffixMap = new TreeMap<>();
@@ -158,48 +163,46 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
         if (formatQuery.startsWith(FORMAT_QUERY_DECIMAL)) {
             Map<String, String> settings = getSettings(formatQuery.substring(FORMAT_QUERY_DECIMAL.length()));
 
-            DecimalFormatSymbols symbols = new DecimalFormatSymbols();
-            DecimalFormat decimalFormat = new DecimalFormat();
-            decimalFormat.setRoundingMode(RoundingMode.HALF_EVEN);
-
-            Optional.ofNullable(settings.get("decimalSeparator"))
-                    .map(s -> s.charAt(0))
-                    .ifPresent(symbols::setDecimalSeparator);
-            Optional.ofNullable(settings.get("groupingSeparator"))
-                    .map(s -> s.charAt(0))
-                    .ifPresent(c -> {
-                        symbols.setGroupingSeparator(c);
-                        decimalFormat.setGroupingUsed(true);
+            final Optional<Character> decimalSeparatorOpt = Optional.ofNullable(settings.get("decimalSeparator"))
+                    .map(s -> s.charAt(0));
+            final Optional<Character> groupingSeparatorOpt = Optional.ofNullable(settings.get("groupingSeparator"))
+                    .map(s -> s.charAt(0));
+            final Optional<Integer> groupingSizeOpt = Optional.ofNullable(settings.get("groupingSize"))
+                    .flatMap(s -> {
+                        try {
+                            return Optional.of(Integer.parseInt(s));
+                        } catch (NumberFormatException e) {
+                            return Optional.empty();
+                        }
                     });
-            Optional.ofNullable(settings.get("groupingSize"))
+            final Optional<Integer> maximumFractionDigitsOpt = Optional.ofNullable(settings.get("maximumFractionDigits"))
                     .flatMap(s -> {
                         try {
                             return Optional.of(Integer.parseInt(s));
                         } catch (NumberFormatException e) {
                             return Optional.empty();
                         }
-                    })
-                    .map(Number::intValue)
-                    .ifPresent(decimalFormat::setGroupingSize);
-            Optional.ofNullable(settings.get("maximumFractionDigits"))
-                    .flatMap(s -> {
-                        try {
-                            return Optional.of(Integer.parseInt(s));
-                        } catch (NumberFormatException e) {
-                            return Optional.empty();
-                        }
-                    })
-                    .map(Number::intValue)
-                    .ifPresent(decimalFormat::setMaximumFractionDigits);
+                    });
 
-            decimalFormat.setDecimalFormatSymbols(symbols);
-
-            return n -> ((DecimalFormat) decimalFormat.clone()).format(n);
+            ThreadLocal<DecimalFormat> threadLocalFormat = ThreadLocal.withInitial(() -> {
+                DecimalFormatSymbols sym = new DecimalFormatSymbols();
+                decimalSeparatorOpt.ifPresent(sym::setDecimalSeparator);
+                groupingSeparatorOpt.ifPresent(sym::setGroupingSeparator);
+                DecimalFormat fmt = new DecimalFormat();
+                fmt.setRoundingMode(RoundingMode.HALF_EVEN);
+                groupingSeparatorOpt.ifPresent(c -> fmt.setGroupingUsed(true));
+                groupingSizeOpt.ifPresent(fmt::setGroupingSize);
+                maximumFractionDigitsOpt.ifPresent(fmt::setMaximumFractionDigits);
+                fmt.setDecimalFormatSymbols(sym);
+                return fmt;
+            });
+            return n -> threadLocalFormat.get().format(n);
         }
 
         try {
-            DecimalFormat decimalFormat = new DecimalFormat(formatQuery);
-            return n -> ((DecimalFormat) decimalFormat.clone()).format(n);
+            new DecimalFormat(formatQuery); // validate the pattern eagerly
+            ThreadLocal<DecimalFormat> threadLocalFormat = ThreadLocal.withInitial(() -> new DecimalFormat(formatQuery));
+            return n -> threadLocalFormat.get().format(n);
         } catch (IllegalArgumentException e) {
             return n -> "INVALID_FORMAT";
         }
@@ -211,11 +214,6 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
     public @NotNull String getDisplayValue(@Nullable V value, @NotNull String formatQuery) {
         if (value == null) {
             return getDisplayNullValue();
-        }
-
-        if (formatQuery.isEmpty()) {
-            DecimalFormat decimalFormat = new DecimalFormat("#.##");
-            return decimalFormat.format(value);
         }
 
         if (formatQuery.equals("raw")) {

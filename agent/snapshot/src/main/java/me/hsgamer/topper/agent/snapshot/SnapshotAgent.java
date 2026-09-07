@@ -5,6 +5,7 @@ import me.hsgamer.topper.agent.core.Agent;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
@@ -23,11 +24,12 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
         }
 
         List<Map.Entry<K, V>> list = getUrgentSnapshot();
-        Map<K, Integer> map = new HashMap<>(list.size());
-        for (int i = 0; i < list.size(); i++) {
-            map.put(list.get(i).getKey(), i);
-        }
-        snapshot.set(new Snapshot<>(list, map));
+        Map<K, Integer> map = IntStream.range(0, list.size()).parallel()
+                .mapToObj(i -> new AbstractMap.SimpleImmutableEntry<>(list.get(i).getKey(), i))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Snapshot<K, V> newSnapshot = new Snapshot<>(list, map);
+
+        snapshot.set(newSnapshot);
     }
 
     @Override

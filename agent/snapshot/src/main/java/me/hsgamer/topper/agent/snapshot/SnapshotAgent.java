@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
-    private final AtomicReference<Snapshot<K, V>> snapshot = new AtomicReference<>(null);
+    private final AtomicReference<Snapshot<K, V>> snapshot = new AtomicReference<>(Snapshot.empty());
     private Comparator<V> comparator;
 
     protected abstract Stream<Map.Entry<K, V>> getDataStream();
@@ -18,7 +18,7 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
     @Override
     public void run() {
         Snapshot<K, V> currentSnapshot = snapshot.get();
-        if (currentSnapshot != null && !needUpdate()) {
+        if (!currentSnapshot.isEmpty() && !needUpdate()) {
             return;
         }
 
@@ -32,7 +32,7 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
 
     @Override
     public void stop() {
-        snapshot.set(null);
+        snapshot.set(Snapshot.empty());
     }
 
     public List<Map.Entry<K, V>> getUrgentSnapshot() {
@@ -43,33 +43,19 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
         return stream.collect(Collectors.toList());
     }
 
-    public List<Map.Entry<K, V>> getSnapshot() {
-        Snapshot<K, V> s = snapshot.get();
-        return s == null ? Collections.emptyList() : s.entryList;
+    public Snapshot<K, V> getSnapshot() {
+        return snapshot.get();
     }
 
     public int getSnapshotIndex(K key) {
-        Snapshot<K, V> s = snapshot.get();
-        return s == null ? -1 : s.indexMap.getOrDefault(key, -1);
+        return snapshot.get().getIndex(key);
     }
 
     public Optional<Map.Entry<K, V>> getSnapshotByIndex(int index) {
-        List<Map.Entry<K, V>> list = getSnapshot();
-        if (index < 0 || index >= list.size()) return Optional.empty();
-        return Optional.of(list.get(index));
+        return snapshot.get().getByIndex(index);
     }
 
     public void setComparator(Comparator<V> comparator) {
         this.comparator = comparator;
-    }
-
-    private static final class Snapshot<K, V> {
-        private final List<Map.Entry<K, V>> entryList;
-        private final Map<K, Integer> indexMap;
-
-        private Snapshot(List<Map.Entry<K, V>> entryList, Map<K, Integer> indexMap) {
-            this.entryList = entryList;
-            this.indexMap = indexMap;
-        }
     }
 }

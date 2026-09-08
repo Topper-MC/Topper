@@ -1,55 +1,31 @@
 package me.hsgamer.topper.agent.snapshot;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SnapshotChange<K, V> {
     public final Snapshot<K, V> oldSnapshot;
     public final Snapshot<K, V> newSnapshot;
-    private final Map<K, Relative<K, V>> relatives = new HashMap<>();
-    private volatile Map<K, Entry<K, V>> changes;
-    private volatile List<Entry<K, V>> allEntries;
-    private volatile List<Entry<K, V>> movedEntries;
+    private final ConcurrentHashMap<K, Relative<K, V>> relatives = new ConcurrentHashMap<>();
+    private final Map<K, Relative<K, V>> relativesView = Collections.unmodifiableMap(relatives);
+    private volatile ChangeSet<K, V> changes;
 
     public SnapshotChange(Snapshot<K, V> oldSnapshot, Snapshot<K, V> newSnapshot) {
         this.oldSnapshot = oldSnapshot;
         this.newSnapshot = newSnapshot;
     }
 
-    private static <K, V> void evaluateCrossing(int anchorPos, int entryPos, List<Entry<K, V>> entries,
-                                                List<List<Entry<K, V>>> overtookAccumulators, List<List<Entry<K, V>>> overtakenByAccumulators) {
-        Entry<K, V> anchor = entries.get(anchorPos);
-        Entry<K, V> entry = entries.get(entryPos);
-        int anchorOld = anchor.oldIndex;
-        int anchorNew = anchor.newIndex;
-        int entryOld = entry.oldIndex;
-        int entryNew = entry.newIndex;
-        if (entryOld >= 0 && (anchorOld < 0 || entryOld < anchorOld)
-                && anchorNew >= 0 && (entryNew < 0 || entryNew > anchorNew)) {
-            accumulate(overtookAccumulators, anchorPos, entry);
-            accumulate(overtakenByAccumulators, entryPos, anchor);
-        } else if (anchorOld >= 0 && (entryOld < 0 || entryOld > anchorOld)
-                && entryNew >= 0 && (anchorNew < 0 || entryNew < anchorNew)) {
-            accumulate(overtakenByAccumulators, anchorPos, entry);
-            accumulate(overtookAccumulators, entryPos, anchor);
-        }
-    }
-
-    private static <K, V> void accumulate(List<List<Entry<K, V>>> accumulators, int index, Entry<K, V> entry) {
-        List<Entry<K, V>> accumulator = accumulators.get(index);
-        if (accumulator == null) {
-            accumulator = new ArrayList<>();
-            accumulators.set(index, accumulator);
-        }
-        accumulator.add(entry);
-    }
-
     public Map<K, Entry<K, V>> getChanges() {
-        Map<K, Entry<K, V>> result = changes;
+        return changeSet().map;
+    }
+
+    private ChangeSet<K, V> changeSet() {
+        ChangeSet<K, V> result = changes;
         if (result == null) {
             synchronized (this) {
                 result = changes;
                 if (result == null) {
-                    result = computeChanges();
+                    result = computeChangeSet();
                     changes = result;
                 }
             }
@@ -57,51 +33,63 @@ public class SnapshotChange<K, V> {
         return result;
     }
 
-    private Map<K, Entry<K, V>> computeChanges() {
+    private ChangeSet<K, V> computeChangeSet() {
         int oldSize = oldSnapshot.size();
         int newSize = newSnapshot.size();
         if (oldSize == 0 && newSize == 0) {
-            return Collections.emptyMap();
+            return new ChangeSet<>(Collections.emptyMap(), Collections.emptyList(), Collections.emptyList());
         }
 
         Map<K, Entry<K, V>> changeMap = new HashMap<>((int) (Math.max(oldSize, newSize) / 0.75f) + 1);
+        List<Entry<K, V>> all = new ArrayList<>(Math.max(oldSize, newSize));
+        List<Entry<K, V>> moved = new ArrayList<>();
 
         for (Map.Entry<K, Integer> indexEntry : newSnapshot.indexEntries()) {
             K key = indexEntry.getKey();
             int newIndex = indexEntry.getValue();
             int oldIndex = oldSnapshot.getIndex(key);
-            changeMap.put(key, new Entry<>(
+            Entry<K, V> entry = new Entry<>(
                     key,
                     oldIndex < 0 ? null : oldSnapshot.valueAt(oldIndex),
                     newSnapshot.valueAt(newIndex),
                     oldIndex,
                     newIndex
-            ));
+            );
+            changeMap.put(key, entry);
+            all.add(entry);
+            if (oldIndex != newIndex) {
+                moved.add(entry);
+            }
         }
 
         for (Map.Entry<K, Integer> indexEntry : oldSnapshot.indexEntries()) {
             K key = indexEntry.getKey();
             if (newSnapshot.getIndex(key) >= 0) continue;
             int oldIndex = indexEntry.getValue();
-            changeMap.put(key, new Entry<>(key, oldSnapshot.valueAt(oldIndex), null, oldIndex, -1));
+            Entry<K, V> entry = new Entry<>(key, oldSnapshot.valueAt(oldIndex), null, oldIndex, -1);
+            changeMap.put(key, entry);
+            all.add(entry);
+            moved.add(entry);
         }
 
-        return Collections.unmodifiableMap(changeMap);
+        return new ChangeSet<>(Collections.unmodifiableMap(changeMap), all, moved);
     }
 
-    public synchronized Relative<K, V> getRelative(K key) {
+    public Relative<K, V> getRelative(K key) {
+        if (key == null) {
+            return computeRelative(null);
+        }
         Relative<K, V> cached = relatives.get(key);
         if (cached == null) {
             if (!getChanges().containsKey(key)) {
                 return Relative.empty(key);
             }
-            cached = computeRelative(key);
-            relatives.put(key, cached);
+            cached = relatives.computeIfAbsent(key, this::computeRelative);
         }
         return cached;
     }
 
-    public synchronized Map<K, Relative<K, V>> getRelatives() {
+    public Map<K, Relative<K, V>> getRelatives() {
         Map<K, Entry<K, V>> changeMap = getChanges();
         if (relatives.size() < changeMap.size()) {
             if (oldSnapshot.sameOrder(newSnapshot)) {
@@ -109,24 +97,26 @@ public class SnapshotChange<K, V> {
                     relatives.putIfAbsent(anchor.key, new Relative<>(anchor, Collections.emptyList(), Collections.emptyList()));
                 }
             } else {
-                computeAllRelatives(changeMap);
+                for (K key : changeMap.keySet()) {
+                    getRelative(key);
+                }
             }
         }
-        return Collections.unmodifiableMap(relatives);
+        return relativesView;
     }
 
     private Relative<K, V> computeRelative(K key) {
-        Map<K, Entry<K, V>> changeMap = getChanges();
-        Entry<K, V> anchor = changeMap.get(key);
+        ChangeSet<K, V> computed = changeSet();
+        Entry<K, V> anchor = computed.map.get(key);
         if (anchor == null) return Relative.empty(key);
 
         int anchorOld = anchor.oldIndex;
         int anchorNew = anchor.newIndex;
+
         List<Entry<K, V>> overtook = null;
         List<Entry<K, V>> overtakenBy = null;
         // An anchor that did not move can only be crossed by entries that did.
-        ensureEntryLists();
-        List<Entry<K, V>> candidates = anchorOld != anchorNew ? allEntries : movedEntries;
+        List<Entry<K, V>> candidates = anchorOld != anchorNew ? computed.all : computed.moved;
         for (Entry<K, V> entry : candidates) {
             if (entry == anchor) continue;
             int entryOld = entry.oldIndex;
@@ -150,62 +140,15 @@ public class SnapshotChange<K, V> {
         );
     }
 
-    private void computeAllRelatives(Map<K, Entry<K, V>> changeMap) {
-        int size = changeMap.size();
-        List<Entry<K, V>> entries = new ArrayList<>(changeMap.values());
-        List<List<Entry<K, V>>> overtookAccumulators = new ArrayList<>(Collections.nCopies(size, null));
-        List<List<Entry<K, V>>> overtakenByAccumulators = new ArrayList<>(Collections.nCopies(size, null));
-        // Only pairs with a moved side can cross. Moved-moved pairs go to the
-        // lower row; moved-unmoved pairs go to the moved side's row.
-        int[] moved = new int[size];
-        int[] unmoved = new int[size];
-        int movedCount = 0;
-        int unmovedCount = 0;
-        for (int i = 0; i < size; i++) {
-            Entry<K, V> anchor = entries.get(i);
-            if (anchor.oldIndex == anchor.newIndex) {
-                unmoved[unmovedCount++] = i;
-            } else {
-                moved[movedCount++] = i;
-            }
-        }
-        for (int a = 0; a < movedCount; a++) {
-            int anchorPos = moved[a];
-            for (int b = a + 1; b < movedCount; b++) {
-                evaluateCrossing(anchorPos, moved[b], entries, overtookAccumulators, overtakenByAccumulators);
-            }
-            for (int u = 0; u < unmovedCount; u++) {
-                evaluateCrossing(anchorPos, unmoved[u], entries, overtookAccumulators, overtakenByAccumulators);
-            }
-        }
+    private static final class ChangeSet<K, V> {
+        final Map<K, Entry<K, V>> map;
+        final List<Entry<K, V>> all;
+        final List<Entry<K, V>> moved;
 
-        for (int i = 0; i < size; i++) {
-            Entry<K, V> anchor = entries.get(i);
-            List<Entry<K, V>> overtook = overtookAccumulators.get(i);
-            List<Entry<K, V>> overtakenBy = overtakenByAccumulators.get(i);
-            relatives.putIfAbsent(anchor.key, new Relative<>(
-                    anchor,
-                    overtook == null ? Collections.emptyList() : Collections.unmodifiableCollection(overtook),
-                    overtakenBy == null ? Collections.emptyList() : Collections.unmodifiableCollection(overtakenBy)
-            ));
-        }
-    }
-
-    private void ensureEntryLists() {
-        if (allEntries == null) {
-            synchronized (this) {
-                if (allEntries == null) {
-                    List<Entry<K, V>> all = new ArrayList<>(getChanges().values());
-                    List<Entry<K, V>> moved = new ArrayList<>();
-                    for (Entry<K, V> entry : all) {
-                        if (entry.oldIndex != entry.newIndex) {
-                            moved.add(entry);
-                        }
-                    }
-                    movedEntries = moved;
-                    allEntries = all;
-                }
-            }
+        ChangeSet(Map<K, Entry<K, V>> map, List<Entry<K, V>> all, List<Entry<K, V>> moved) {
+            this.map = map;
+            this.all = all;
+            this.moved = moved;
         }
     }
 

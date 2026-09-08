@@ -1,9 +1,6 @@
 package me.hsgamer.topper.agent.snapshot;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public final class Snapshot<K, V> {
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -22,12 +19,28 @@ public final class Snapshot<K, V> {
         return (Snapshot<K, V>) EMPTY;
     }
 
+    public Collection<K> getKeys() {
+        return Collections.unmodifiableCollection(indexMap.keySet());
+    }
+
     public boolean isEmpty() {
         return entryList.isEmpty();
     }
 
     public int size() {
         return entryList.size();
+    }
+
+    boolean sameOrder(Snapshot<K, V> other) {
+        return indexMap.equals(other.indexMap);
+    }
+
+    Set<Map.Entry<K, Integer>> indexEntries() {
+        return indexMap.entrySet();
+    }
+
+    V valueAt(int index) {
+        return entryList.get(index).getValue();
     }
 
     public int getIndex(K key) {
@@ -37,9 +50,5 @@ public final class Snapshot<K, V> {
     public Optional<Map.Entry<K, V>> getByIndex(int index) {
         if (index < 0 || index >= entryList.size()) return Optional.empty();
         return Optional.of(entryList.get(index));
-    }
-
-    public Optional<V> getValue(K key) {
-        return Optional.of(getIndex(key)).filter(i -> i >= 0).flatMap(this::getByIndex).map(Map.Entry::getValue);
     }
 }

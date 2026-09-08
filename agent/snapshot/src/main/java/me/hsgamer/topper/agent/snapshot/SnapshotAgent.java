@@ -4,6 +4,7 @@ import me.hsgamer.topper.agent.core.Agent;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -11,6 +12,7 @@ import java.util.stream.Stream;
 public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
     private final AtomicReference<Snapshot<K, V>> snapshot = new AtomicReference<>(Snapshot.empty());
     private Comparator<V> comparator;
+    private Consumer<SnapshotChange<K, V>> changeConsumer;
 
     protected abstract Stream<Map.Entry<K, V>> getDataStream();
 
@@ -28,6 +30,9 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
                 .mapToObj(i -> new AbstractMap.SimpleImmutableEntry<>(list.get(i).getKey(), i))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         Snapshot<K, V> newSnapshot = new Snapshot<>(list, map);
+        if (changeConsumer != null) {
+            changeConsumer.accept(new SnapshotChange<>(currentSnapshot, newSnapshot));
+        }
 
         snapshot.set(newSnapshot);
     }
@@ -59,5 +64,9 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
 
     public void setComparator(Comparator<V> comparator) {
         this.comparator = comparator;
+    }
+
+    public void setChangeConsumer(Consumer<SnapshotChange<K, V>> changeConsumer) {
+        this.changeConsumer = changeConsumer;
     }
 }

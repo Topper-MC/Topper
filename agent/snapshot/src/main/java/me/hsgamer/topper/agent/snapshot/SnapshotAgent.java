@@ -1,22 +1,36 @@
 package me.hsgamer.topper.agent.snapshot;
 
-import me.hsgamer.topper.agent.core.Agent;
+import me.hsgamer.topper.agent.core.AgentHolder;
+import me.hsgamer.topper.agent.core.HolderEvent;
+import me.hsgamer.topper.agent.core.Notifier;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
+public abstract class SnapshotAgent<K, V> implements Runnable {
     private final AtomicReference<Snapshot<K, V>> snapshot = new AtomicReference<>(Snapshot.empty());
+    private final Notifier<SnapshotChange<K, V>> changeNotifier = new Notifier<>();
     private Comparator<V> comparator;
-    private Consumer<SnapshotChange<K, V>> changeConsumer;
 
     protected abstract Stream<Map.Entry<K, V>> getDataStream();
 
     protected abstract boolean needUpdate();
+
+    public void bindTo(AgentHolder<K, V> holder) {
+        holder.getHolderNotifier().addListener(e -> {
+            if (e != HolderEvent.UNREGISTERED) {
+                return;
+            }
+            snapshot.set(Snapshot.empty());
+        });
+    }
+
+    public Notifier<SnapshotChange<K, V>> getChangeNotifier() {
+        return changeNotifier;
+    }
 
     @Override
     public void run() {
@@ -30,16 +44,11 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
                 .mapToObj(i -> new AbstractMap.SimpleImmutableEntry<>(list.get(i).getKey(), i))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         Snapshot<K, V> newSnapshot = new Snapshot<>(list, map);
-        if (changeConsumer != null) {
-            changeConsumer.accept(new SnapshotChange<>(currentSnapshot, newSnapshot));
+        if (!changeNotifier.isEmpty()) {
+            changeNotifier.fire(new SnapshotChange<>(currentSnapshot, newSnapshot));
         }
 
         snapshot.set(newSnapshot);
-    }
-
-    @Override
-    public void stop() {
-        snapshot.set(Snapshot.empty());
     }
 
     public List<Map.Entry<K, V>> getUrgentSnapshot() {
@@ -64,9 +73,5 @@ public abstract class SnapshotAgent<K, V> implements Agent, Runnable {
 
     public void setComparator(Comparator<V> comparator) {
         this.comparator = comparator;
-    }
-
-    public void setChangeConsumer(Consumer<SnapshotChange<K, V>> changeConsumer) {
-        this.changeConsumer = changeConsumer;
     }
 }

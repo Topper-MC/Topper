@@ -3,10 +3,8 @@ package me.hsgamer.topper.agent.storage;
 import me.hsgamer.hscore.logger.common.LogLevel;
 import me.hsgamer.hscore.logger.common.Logger;
 import me.hsgamer.hscore.logger.provider.LoggerProvider;
-import me.hsgamer.topper.agent.core.Agent;
-import me.hsgamer.topper.agent.core.DataEntryAgent;
-import me.hsgamer.topper.data.core.DataEntry;
-import me.hsgamer.topper.data.core.DataHolder;
+import me.hsgamer.topper.agent.core.AgentHolder;
+import me.hsgamer.topper.agent.core.HolderEvent;
 import me.hsgamer.topper.storage.core.DataStorage;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable {
+public class StorageAgent<K, V> implements Runnable {
     private static final Logger LOGGER = LoggerProvider.getLogger(StorageAgent.class);
 
     private final DataStorage<K, V> storage;
@@ -32,6 +30,57 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
     public StorageAgent(DataStorage<K, V> storage) {
         this.storage = storage;
     }
+
+    public void bindTo(AgentHolder<K, V> holder) {
+        holder.getEntryNotifier().addListener(e -> {
+            switch (e.kind) {
+                case CREATED:
+                    if (loadOnCreate) {
+                        storage.load(e.entry.getKey()).ifPresent(value -> e.entry.setValue(value, false));
+                    }
+                    break;
+                case UPDATED:
+                    scheduleValue(e.entry.getKey(), Objects.equals(e.newValue, e.entry.getHolder().getDefaultValue()) ? null : e.newValue);
+                    break;
+                case REMOVED:
+                    if (scheduleOnEntryRemove) {
+                        scheduleValue(e.entry.getKey(), null);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        });
+        holder.getHolderNotifier().addListener(e -> {
+            switch (e) {
+                case REGISTERED:
+                    storage.onRegister();
+                    break;
+                case BEFORE_UNREGISTER:
+                    save(true);
+                    break;
+                case UNREGISTERED:
+                    storage.onUnregister();
+                    break;
+                default:
+                    break;
+            }
+        });
+    }
+
+    public void bindLoadTo(AgentHolder<K, V> holder) {
+        holder.getHolderNotifier().addListener(e -> {
+            if (e != HolderEvent.REGISTERED) {
+                return;
+            }
+            try {
+                storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
+            } catch (Exception ex) {
+                LOGGER.log(LogLevel.ERROR, "Failed to load entries", ex);
+            }
+        });
+    }
+
 
     private void save(boolean urgent) {
         if (saving.get() && !urgent) return;
@@ -99,40 +148,6 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
     }
 
     @Override
-    public void start() {
-        storage.onRegister();
-    }
-
-    @Override
-    public void stop() {
-        storage.onUnregister();
-    }
-
-    @Override
-    public void beforeStop() {
-        save(true);
-    }
-
-    @Override
-    public void onCreate(DataEntry<K, V> entry) {
-        if (loadOnCreate) {
-            storage.load(entry.getKey()).ifPresent(value -> entry.setValue(value, false));
-        }
-    }
-
-    @Override
-    public void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
-        scheduleValue(entry.getKey(), Objects.equals(newValue, entry.getHolder().getDefaultValue()) ? null : newValue);
-    }
-
-    @Override
-    public void onRemove(DataEntry<K, V> entry) {
-        if (scheduleOnEntryRemove) {
-            scheduleValue(entry.getKey(), null);
-        }
-    }
-
-    @Override
     public void run() {
         save(false);
     }
@@ -153,18 +168,6 @@ public class StorageAgent<K, V> implements Agent, DataEntryAgent<K, V>, Runnable
         this.scheduleOnEntryRemove = scheduleOnEntryRemove;
     }
 
-    public Agent getLoadAgent(DataHolder<K, V> holder) {
-        return new Agent() {
-            @Override
-            public void start() {
-                try {
-                    storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
-                } catch (Exception e) {
-                    LOGGER.log(LogLevel.ERROR, "Failed to load entries", e);
-                }
-            }
-        };
-    }
 
     private static final class ValueWrapper<V> {
         private final @Nullable V value;

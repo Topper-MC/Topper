@@ -1,14 +1,12 @@
 package me.hsgamer.topper.template.topplayernumber;
 
-import me.hsgamer.topper.agent.core.Agent;
-import me.hsgamer.topper.agent.core.DataEntryAgent;
+import me.hsgamer.topper.agent.core.AgentHolder;
 import me.hsgamer.topper.storage.core.DataStorage;
 import me.hsgamer.topper.template.topplayernumber.holder.NumberTopHolder;
 import me.hsgamer.topper.template.topplayernumber.manager.*;
 import me.hsgamer.topper.value.core.ValueProvider;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,7 +35,7 @@ public abstract class TopPlayerNumberTemplate {
 
     public abstract Optional<ValueProvider<UUID, Double>> createValueProvider(Map<String, Object> settings);
 
-    public abstract Agent createTask(Runnable runnable, NumberTopHolder.TaskType taskType, Map<String, Object> settings);
+    public abstract Runnable bindTask(AgentHolder<UUID, Double> holder, Runnable runnable, NumberTopHolder.TaskType taskType, Map<String, Object> settings);
 
     public abstract void logWarning(String message, @Nullable Throwable throwable);
 
@@ -49,7 +47,7 @@ public abstract class TopPlayerNumberTemplate {
         logWarning(message, null);
     }
 
-    public void modifyAgents(NumberTopHolder holder, List<Agent> agents, List<DataEntryAgent<UUID, Double>> entryAgents) {
+    public void modifyNotifiers(NumberTopHolder holder) {
 
     }
 

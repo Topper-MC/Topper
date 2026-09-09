@@ -1,6 +1,6 @@
 package me.hsgamer.topper.agent.update;
 
-import me.hsgamer.topper.agent.core.DataEntryAgent;
+import me.hsgamer.topper.agent.core.AgentHolder;
 import me.hsgamer.topper.data.core.DataEntry;
 import me.hsgamer.topper.data.core.DataHolder;
 import me.hsgamer.topper.value.core.ValueWrapper;
@@ -15,7 +15,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
+public class UpdateAgent<K, V> {
     private final DataHolder<K, V> holder;
     private final BiConsumer<K, Consumer<ValueWrapper<V>>> updateConsumer;
 
@@ -162,15 +162,19 @@ public class UpdateAgent<K, V> implements DataEntryAgent<K, V> {
         };
     }
 
-
-    @Override
-    public void onCreate(DataEntry<K, V> entry) {
-        map.put(entry.getKey(), UpdateStatus.DEFAULT);
-    }
-
-    @Override
-    public void onRemove(DataEntry<K, V> entry) {
-        map.remove(entry.getKey());
+    public void bindTo(AgentHolder<K, V> holder) {
+        holder.getEntryNotifier().addListener(e -> {
+            switch (e.kind) {
+                case CREATED:
+                    map.put(e.entry.getKey(), UpdateStatus.DEFAULT);
+                    break;
+                case REMOVED:
+                    map.remove(e.entry.getKey());
+                    break;
+                default:
+                    break;
+            }
+        });
     }
 
     public enum FilterResult {

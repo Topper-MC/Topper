@@ -1,13 +1,13 @@
 package me.hsgamer.topper.template.topplayernumber.holder;
 
-import me.hsgamer.topper.agent.core.Agent;
 import me.hsgamer.topper.agent.core.AgentHolder;
-import me.hsgamer.topper.agent.core.DataEntryAgent;
+import me.hsgamer.topper.agent.core.EntryEvent;
+import me.hsgamer.topper.agent.core.HolderEvent;
+import me.hsgamer.topper.agent.core.Notifier;
 import me.hsgamer.topper.agent.snapshot.SnapshotAgent;
 import me.hsgamer.topper.agent.snapshot.SnapshotHolderAgent;
 import me.hsgamer.topper.agent.storage.StorageAgent;
 import me.hsgamer.topper.agent.update.UpdateAgent;
-import me.hsgamer.topper.data.core.DataEntry;
 import me.hsgamer.topper.data.simple.SimpleDataHolder;
 import me.hsgamer.topper.query.display.number.NumberDisplay;
 import me.hsgamer.topper.template.topplayernumber.TopPlayerNumberTemplate;
@@ -25,8 +25,8 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
     private final String name;
     private final Settings settings;
     private final NumberDisplay<UUID, Double> valueDisplay;
-    private final List<Agent> agents;
-    private final List<DataEntryAgent<UUID, Double>> entryAgents;
+    private final Notifier<EntryEvent<UUID, Double>> entryNotifier = new Notifier<>();
+    private final Notifier<HolderEvent> holderNotifier = new Notifier<>();
     private final StorageAgent<UUID, Double> storageAgent;
     private final UpdateAgent<UUID, Double> updateAgent;
     private final SnapshotHolderAgent<UUID, Double> snapshotAgent;
@@ -50,8 +50,6 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
                 break;
         }
 
-        List<Agent> agents = new ArrayList<>();
-        List<DataEntryAgent<UUID, Double>> entryAgents = new ArrayList<>();
         this.valueDisplay = new NumberDisplay<UUID, Double>() {
             @Override
             public @NotNull String getDisplayName(@Nullable UUID uuid) {
@@ -79,10 +77,9 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
 
         this.storageAgent = new StorageAgent<>(template.getTopManager().buildStorage(name));
         storageAgent.setMaxEntryPerCall(template.getSettings().taskSaveEntryPerTick());
-        agents.add(storageAgent);
-        agents.add(storageAgent.getLoadAgent(this));
-        agents.add(template.createTask(storageAgent, TaskType.STORAGE, settings.valueProvider()));
-        entryAgents.add(storageAgent);
+        storageAgent.bindTo(this);
+        storageAgent.bindLoadTo(this);
+        bindAutoTask(template, storageAgent, TaskType.STORAGE, settings.valueProvider());
 
         ValueProvider<UUID, Double> valueProvider = template.createValueProvider(settings.valueProvider()).orElseGet(() -> {
             template.logWarning("No value provider found for " + name);
@@ -107,34 +104,40 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
             });
         }
         updateAgent.setMaxSkips(template.getSettings().taskUpdateMaxSkips());
-        entryAgents.add(updateAgent);
-        agents.add(template.createTask(updateAgent.getUpdateRunnable(template.getSettings().taskUpdateEntryPerTick()), TaskType.UPDATE, settings.valueProvider()));
-        agents.add(template.createTask(updateAgent.getSetRunnable(), TaskType.SET, settings.valueProvider()));
+        updateAgent.bindTo(this);
+        bindAutoTask(template, updateAgent.getUpdateRunnable(template.getSettings().taskUpdateEntryPerTick()), TaskType.UPDATE, settings.valueProvider());
+        bindAutoTask(template, updateAgent.getSetRunnable(), TaskType.SET, settings.valueProvider());
 
         this.snapshotAgent = new SnapshotHolderAgent<>(this);
         boolean reverseOrder = settings.reverse();
         snapshotAgent.setComparator(reverseOrder ? Comparator.naturalOrder() : Comparator.reverseOrder());
         snapshotAgent.setDataFilter(entry -> entry.getValue() != null);
-        agents.add(snapshotAgent);
-        entryAgents.add(snapshotAgent);
-        agents.add(template.createTask(snapshotAgent, TaskType.SNAPSHOT, settings.valueProvider()));
+        snapshotAgent.bindTo(this);
+        bindAutoTask(template, snapshotAgent, TaskType.SNAPSHOT, settings.valueProvider());
 
-        entryAgents.add(new DataEntryAgent<UUID, Double>() {
-            @Override
-            public void onUpdate(DataEntry<UUID, Double> entry, Double oldValue, Double newValue) {
-                template.getEntryConsumeManager().consume(new EntryConsumeManager.Context(
-                        GROUP,
-                        name,
-                        entry.getKey(),
-                        oldValue,
-                        newValue
-                ));
+        getEntryNotifier().addListener(e -> {
+            if (e.kind != EntryEvent.Kind.UPDATED) {
+                return;
             }
+            template.getEntryConsumeManager().consume(new EntryConsumeManager.Context(
+                    GROUP,
+                    name,
+                    e.entry.getKey(),
+                    e.oldValue,
+                    e.newValue
+            ));
         });
+        template.modifyNotifiers(this);
+    }
 
-        template.modifyAgents(this, agents, entryAgents);
-        this.agents = Collections.unmodifiableList(agents);
-        this.entryAgents = Collections.unmodifiableList(entryAgents);
+    private void bindAutoTask(TopPlayerNumberTemplate template, Runnable runnable, TaskType taskType, Map<String, Object> settings) {
+        Runnable unregister = template.bindTask(this, runnable, taskType, settings);
+        getHolderNotifier().addListener(e -> {
+            if (e != HolderEvent.UNREGISTERED) {
+                return;
+            }
+            unregister.run();
+        });
     }
 
     @Override
@@ -143,13 +146,13 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
     }
 
     @Override
-    public List<Agent> getAgents() {
-        return agents;
+    public Notifier<EntryEvent<UUID, Double>> getEntryNotifier() {
+        return entryNotifier;
     }
 
     @Override
-    public List<DataEntryAgent<UUID, Double>> getEntryAgents() {
-        return entryAgents;
+    public Notifier<HolderEvent> getHolderNotifier() {
+        return holderNotifier;
     }
 
     public StorageAgent<UUID, Double> getStorageAgent() {

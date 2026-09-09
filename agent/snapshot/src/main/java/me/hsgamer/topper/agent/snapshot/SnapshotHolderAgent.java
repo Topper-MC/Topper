@@ -1,6 +1,6 @@
 package me.hsgamer.topper.agent.snapshot;
 
-import me.hsgamer.topper.agent.core.DataEntryAgent;
+import me.hsgamer.topper.agent.core.AgentHolder;
 import me.hsgamer.topper.data.core.DataEntry;
 import me.hsgamer.topper.data.core.DataHolder;
 
@@ -10,13 +10,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class SnapshotHolderAgent<K, V> extends SnapshotAgent<K, V> implements DataEntryAgent<K, V> {
+public class SnapshotHolderAgent<K, V> extends SnapshotAgent<K, V> {
     private final DataHolder<K, V> holder;
     private final AtomicBoolean needUpdating = new AtomicBoolean(true);
     private Predicate<DataEntry<K, V>> dataFilter = null;
 
     public SnapshotHolderAgent(DataHolder<K, V> holder) {
         this.holder = holder;
+    }
+
+    @Override
+    public void bindTo(AgentHolder<K, V> holder) {
+        super.bindTo(holder);
+        holder.getEntryNotifier().addListener(e -> {
+            switch (e.kind) {
+                case CREATED:
+                case UPDATED:
+                case REMOVED:
+                    needUpdating.set(true);
+                    break;
+                default:
+                    break;
+            }
+        });
     }
 
     public void setDataFilter(Predicate<DataEntry<K, V>> dataFilter) {
@@ -40,20 +56,5 @@ public class SnapshotHolderAgent<K, V> extends SnapshotAgent<K, V> implements Da
         } else {
             return false;
         }
-    }
-
-    @Override
-    public void onCreate(DataEntry<K, V> entry) {
-        needUpdating.set(true);
-    }
-
-    @Override
-    public void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
-        needUpdating.set(true);
-    }
-
-    @Override
-    public void onRemove(DataEntry<K, V> entry) {
-        needUpdating.set(true);
     }
 }

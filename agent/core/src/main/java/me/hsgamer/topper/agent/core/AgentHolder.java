@@ -3,44 +3,54 @@ package me.hsgamer.topper.agent.core;
 import me.hsgamer.topper.data.core.DataEntry;
 import me.hsgamer.topper.data.core.DataHolder;
 
-import java.util.List;
-import java.util.function.Consumer;
-
 public interface AgentHolder<K, V> extends DataHolder<K, V> {
-    List<Agent> getAgents();
+    Notifier<EntryEvent<K, V>> getEntryNotifier();
 
-    List<DataEntryAgent<K, V>> getEntryAgents();
+    Notifier<HolderEvent> getHolderNotifier();
 
+    @Override
     default void onCreate(DataEntry<K, V> entry) {
-        getEntryAgents().forEach(agent -> agent.onCreate(entry));
+        Notifier<EntryEvent<K, V>> notifier = getEntryNotifier();
+        if (notifier.isEmpty()) {
+            return;
+        }
+        notifier.fire(new EntryEvent<>(EntryEvent.Kind.CREATED, entry, null, null));
     }
 
+    @Override
     default void onRemove(DataEntry<K, V> entry) {
-        getEntryAgents().forEach(agent -> agent.onRemove(entry));
+        Notifier<EntryEvent<K, V>> notifier = getEntryNotifier();
+        if (notifier.isEmpty()) {
+            return;
+        }
+        notifier.fire(new EntryEvent<>(EntryEvent.Kind.REMOVED, entry, null, null));
     }
 
+    @Override
     default void onUpdate(DataEntry<K, V> entry, V oldValue, V newValue) {
-        getEntryAgents().forEach(agent -> agent.onUpdate(entry, oldValue, newValue));
+        Notifier<EntryEvent<K, V>> notifier = getEntryNotifier();
+        if (notifier.isEmpty()) {
+            return;
+        }
+        notifier.fire(new EntryEvent<>(EntryEvent.Kind.UPDATED, entry, oldValue, newValue));
     }
 
     default void register() {
-        getAgents().forEach(Agent::start);
+        Notifier<HolderEvent> notifier = getHolderNotifier();
+        if (notifier.isEmpty()) {
+            return;
+        }
+        notifier.fire(HolderEvent.REGISTERED);
     }
 
     default void unregister() {
-        Consumer<Consumer<Agent>> reverseRunnable = consumer -> {
-            List<Agent> agentList = getAgents();
-            for (int i = agentList.size() - 1; i >= 0; i--) {
-                Agent agent = agentList.get(i);
-                consumer.accept(agent);
-            }
-        };
+        Notifier<HolderEvent> holderNotifier = getHolderNotifier();
+        if (!holderNotifier.isEmpty()) {
+            holderNotifier.fireReverse(HolderEvent.BEFORE_UNREGISTER);
+        }
 
-        reverseRunnable.accept(Agent::beforeStop);
-
-        List<DataEntryAgent<K, V>> entryAgentList = getEntryAgents();
-        getEntryMap().values().forEach(entry -> entryAgentList.forEach(agent -> agent.onUnregister(entry)));
-
-        reverseRunnable.accept(Agent::stop);
+        if (!holderNotifier.isEmpty()) {
+            holderNotifier.fireReverse(HolderEvent.UNREGISTERED);
+        }
     }
 }

@@ -1,8 +1,5 @@
 package me.hsgamer.topper.storage.flat.properties;
 
-import me.hsgamer.hscore.logger.common.LogLevel;
-import me.hsgamer.hscore.logger.common.Logger;
-import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.storage.flat.core.FlatDataStorage;
 import me.hsgamer.topper.storage.flat.core.FlatValueConverter;
 
@@ -13,10 +10,12 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class PropertiesDataStorage<K, V> extends FlatDataStorage<PropertiesDataStorage.PropertyFile, K, V> {
-    private final Logger logger = LoggerProvider.getLogger(getClass());
+    private final Logger logger = Logger.getLogger(getClass().getSimpleName());
 
     public PropertiesDataStorage(File baseFolder, String name, FlatValueConverter<K> keyConverter, FlatValueConverter<V> valueConverter) {
         super(baseFolder, name, keyConverter, valueConverter);
@@ -38,7 +37,7 @@ public class PropertiesDataStorage<K, V> extends FlatDataStorage<PropertiesDataS
                 properties.load(fileOutputStream);
             }
         } catch (IOException e) {
-            logger.log(LogLevel.ERROR, "Failed to load the data", e);
+            logger.log(Level.SEVERE, "Failed to load the data", e);
         }
         return new PropertyFile(file, properties);
     }
@@ -65,7 +64,7 @@ public class PropertiesDataStorage<K, V> extends FlatDataStorage<PropertiesDataS
                 file.properties.store(fileOutputStream, null);
             }
         } catch (IOException e) {
-            logger.log(LogLevel.ERROR, "Failed to save the data", e);
+            logger.log(Level.SEVERE, "Failed to save the data", e);
         }
     }
 

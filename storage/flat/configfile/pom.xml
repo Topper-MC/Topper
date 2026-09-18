@@ -19,9 +19,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>me.hsgamer</groupId>
-            <artifactId>hscore-config-common</artifactId>
-            <version>${core.version}</version>
+            <groupId>io.github.projectunified</groupId>
+            <artifactId>craftconfig-common</artifactId>
+            <version>${craftconfig.version}</version>
         </dependency>
     </dependencies>
 </project>

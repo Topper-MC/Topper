@@ -1,6 +1,6 @@
 package me.hsgamer.topper.storage.flat.configfile;
 
-import me.hsgamer.hscore.config.Config;
+import io.github.projectunified.craftconfig.common.Config;
 import me.hsgamer.topper.storage.flat.core.FlatDataStorage;
 import me.hsgamer.topper.storage.flat.core.FlatValueConverter;
 
@@ -28,13 +28,13 @@ public abstract class ConfigFileDataStorage<K, V> extends FlatDataStorage<Config
 
     @Override
     protected Map<String, String> loadFromFile(Config file) {
-        return file.getValues(false)
+        return file.getChildren()
                 .entrySet()
                 .stream()
                 .collect(
                         Collectors.toMap(
-                                entry -> entry.getKey()[0],
-                                entry -> String.valueOf(entry.getValue())
+                                Map.Entry::getKey,
+                                entry -> entry.getValue().get(String.class)
                         )
                 );
     }
@@ -51,11 +51,11 @@ public abstract class ConfigFileDataStorage<K, V> extends FlatDataStorage<Config
 
     @Override
     protected void setValue(Config file, String key, String value) {
-        file.set(value, key);
+        file.node(key).set(value);
     }
 
     @Override
     protected void removeValue(Config file, String key) {
-        file.remove(key);
+        file.node(key).remove();
     }
 }

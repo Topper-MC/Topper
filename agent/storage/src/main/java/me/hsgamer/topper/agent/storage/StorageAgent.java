@@ -1,8 +1,5 @@
 package me.hsgamer.topper.agent.storage;
 
-import me.hsgamer.hscore.logger.common.LogLevel;
-import me.hsgamer.hscore.logger.common.Logger;
-import me.hsgamer.hscore.logger.provider.LoggerProvider;
 import me.hsgamer.topper.agent.core.AgentHolder;
 import me.hsgamer.topper.agent.core.HolderEvent;
 import me.hsgamer.topper.storage.core.DataStorage;
@@ -13,10 +10,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class StorageAgent<K, V> implements Runnable {
-    private static final Logger LOGGER = LoggerProvider.getLogger(StorageAgent.class);
+    private static final Logger LOGGER = Logger.getLogger(StorageAgent.class.getSimpleName());
 
     private final DataStorage<K, V> storage;
     private final Queue<Map.Entry<K, ValueWrapper<V>>> queue = new ConcurrentLinkedQueue<>(); // Value can be null representing removal
@@ -76,7 +75,7 @@ public class StorageAgent<K, V> implements Runnable {
             try {
                 storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
             } catch (Exception ex) {
-                LOGGER.log(LogLevel.ERROR, "Failed to load entries", ex);
+                LOGGER.log(Level.SEVERE, "Failed to load entries", ex);
             }
         });
     }
@@ -136,7 +135,7 @@ public class StorageAgent<K, V> implements Runnable {
             modifier.commit();
             savingMap.set(null);
         } catch (Throwable t) {
-            LOGGER.log(LogLevel.ERROR, "Failed to save entries", t);
+            LOGGER.log(Level.SEVERE, "Failed to save entries", t);
             modifier.rollback();
         } finally {
             saving.set(false);

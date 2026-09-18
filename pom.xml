@@ -49,7 +49,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <core.version>4.10.0</core.version>
+        <craftdatabase.version>0.1.0</craftdatabase.version>
+        <craftconfig.version>0.4.0</craftconfig.version>
         <java.version>1.8</java.version>
     </properties>
 

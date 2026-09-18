@@ -1,13 +1,10 @@
 package me.hsgamer.topper.storage.sql.core;
 
-import me.hsgamer.hscore.database.Driver;
-import me.hsgamer.hscore.database.Setting;
-import me.hsgamer.hscore.database.client.sql.BatchBuilder;
-import me.hsgamer.hscore.database.client.sql.SqlClient;
-import me.hsgamer.hscore.database.client.sql.StatementBuilder;
-import me.hsgamer.hscore.logger.common.LogLevel;
-import me.hsgamer.hscore.logger.common.Logger;
-import me.hsgamer.hscore.logger.provider.LoggerProvider;
+import io.github.projectunified.craftdatabase.Driver;
+import io.github.projectunified.craftdatabase.Setting;
+import io.github.projectunified.craftdatabase.client.sql.BatchBuilder;
+import io.github.projectunified.craftdatabase.client.sql.SqlClient;
+import io.github.projectunified.craftdatabase.client.sql.StatementBuilder;
 import me.hsgamer.topper.storage.core.DataStorage;
 
 import java.sql.Connection;
@@ -16,10 +13,12 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public abstract class SqlDataStorageSupplier {
-    protected final Logger logger = LoggerProvider.getLogger(getClass());
+    protected final Logger logger = Logger.getLogger(getClass().getSimpleName());
     private final SqlClient<?> client;
     private final Lock lock = new ReentrantLock();
 
@@ -83,7 +82,7 @@ public abstract class SqlDataStorageSupplier {
                             .filter(entry -> entry.getKey() != null && entry.getValue() != null)
                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
                 } catch (SQLException e) {
-                    logger.log(LogLevel.ERROR, "Failed to load holder", e);
+                    logger.log(Level.SEVERE, "Failed to load holder", e);
                     return Collections.emptyMap();
                 } finally {
                     unlock();
@@ -116,7 +115,7 @@ public abstract class SqlDataStorageSupplier {
                                     : Optional.empty()
                             );
                 } catch (SQLException e) {
-                    logger.log(LogLevel.ERROR, "Failed to load holder", e);
+                    logger.log(Level.SEVERE, "Failed to load holder", e);
                     return Optional.empty();
                 } finally {
                     unlock();
@@ -134,7 +133,7 @@ public abstract class SqlDataStorageSupplier {
                             .setStatement("SELECT " + columnQuery + " FROM `" + name + "`;")
                             .queryList(keyConverter::fromSqlResultSet);
                 } catch (SQLException e) {
-                    logger.log(LogLevel.ERROR, "Failed to load holder", e);
+                    logger.log(Level.SEVERE, "Failed to load holder", e);
                     return Collections.emptyList();
                 } finally {
                     unlock();
@@ -199,7 +198,7 @@ public abstract class SqlDataStorageSupplier {
                             try {
                                 connection.close();
                             } catch (SQLException e) {
-                                logger.log(LogLevel.ERROR, "Failed to close connection", e);
+                                logger.log(Level.SEVERE, "Failed to close connection", e);
                             }
                         }
 
@@ -208,7 +207,7 @@ public abstract class SqlDataStorageSupplier {
                             try {
                                 connection.commit();
                             } catch (SQLException e) {
-                                logger.log(LogLevel.ERROR, "Failed to commit", e);
+                                logger.log(Level.SEVERE, "Failed to commit", e);
                             } finally {
                                 close();
                                 unlock();
@@ -220,7 +219,7 @@ public abstract class SqlDataStorageSupplier {
                             try {
                                 connection.rollback();
                             } catch (SQLException e) {
-                                logger.log(LogLevel.ERROR, "Failed to rollback", e);
+                                logger.log(Level.SEVERE, "Failed to rollback", e);
                             } finally {
                                 close();
                                 unlock();
@@ -229,7 +228,7 @@ public abstract class SqlDataStorageSupplier {
                     };
                     return Optional.of(modifier);
                 } catch (SQLException e) {
-                    logger.log(LogLevel.ERROR, "Failed to get connection", e);
+                    logger.log(Level.SEVERE, "Failed to get connection", e);
                     unlock();
                     return Optional.empty();
                 }
@@ -284,7 +283,7 @@ public abstract class SqlDataStorageSupplier {
                             .setStatement(statement.toString())
                             .update();
                 } catch (SQLException e) {
-                    logger.log(LogLevel.ERROR, "Failed to create table", e);
+                    logger.log(Level.SEVERE, "Failed to create table", e);
                 } finally {
                     unlock();
                 }

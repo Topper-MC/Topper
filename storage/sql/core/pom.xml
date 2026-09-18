@@ -14,14 +14,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>me.hsgamer</groupId>
-            <artifactId>hscore-database-client-sql</artifactId>
-            <version>${core.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>me.hsgamer</groupId>
-            <artifactId>hscore-logger-provider</artifactId>
-            <version>${core.version}</version>
+            <groupId>io.github.projectunified</groupId>
+            <artifactId>craftdatabase-client-sql</artifactId>
+            <version>${craftdatabase.version}</version>
         </dependency>
     </dependencies>
 </project>

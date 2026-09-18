@@ -1,8 +1,8 @@
 package me.hsgamer.topper.storage.sql.mysql;
 
-import me.hsgamer.hscore.database.Setting;
-import me.hsgamer.hscore.database.client.sql.SqlClient;
-import me.hsgamer.hscore.database.driver.mysql.MySqlDriver;
+import io.github.projectunified.craftdatabase.Setting;
+import io.github.projectunified.craftdatabase.client.sql.SqlClient;
+import io.github.projectunified.craftdatabase.driver.mysql.MySqlDriver;
 import me.hsgamer.topper.storage.sql.core.SqlDataStorageSupplier;
 import me.hsgamer.topper.storage.sql.core.SqlDatabaseSetting;
 

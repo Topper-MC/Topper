@@ -21,10 +21,5 @@
             <artifactId>topper-storage-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>me.hsgamer</groupId>
-            <artifactId>hscore-logger-provider</artifactId>
-            <version>${core.version}</version>
-        </dependency>
     </dependencies>
 </project>

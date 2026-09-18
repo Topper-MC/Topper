@@ -1,7 +1,6 @@
 package me.hsgamer.topper.agent.storage;
 
 import me.hsgamer.topper.agent.core.AgentHolder;
-import me.hsgamer.topper.agent.core.HolderEvent;
 import me.hsgamer.topper.storage.core.DataStorage;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,14 +22,12 @@ public class StorageAgent<K, V> implements Runnable {
     private final AtomicReference<Map<K, ValueWrapper<V>>> savingMap = new AtomicReference<>();
     private final AtomicBoolean saving = new AtomicBoolean(false);
     private int maxEntryPerCall = 10;
-    private boolean loadOnCreate = false;
-    private boolean scheduleOnEntryRemove = true;
 
     public StorageAgent(DataStorage<K, V> storage) {
         this.storage = storage;
     }
 
-    public void bindTo(AgentHolder<K, V> holder) {
+    public void bindTo(AgentHolder<K, V> holder, boolean loadOnCreate, boolean scheduleOnEntryRemove) {
         holder.getEntryNotifier().addListener(e -> {
             switch (e.kind) {
                 case CREATED:
@@ -54,6 +51,13 @@ public class StorageAgent<K, V> implements Runnable {
             switch (e) {
                 case REGISTERED:
                     storage.onRegister();
+                    if (!loadOnCreate) {
+                        try {
+                            storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
+                        } catch (Exception ex) {
+                            LOGGER.log(Level.SEVERE, "Failed to load entries", ex);
+                        }
+                    }
                     break;
                 case BEFORE_UNREGISTER:
                     save(true);
@@ -67,19 +71,9 @@ public class StorageAgent<K, V> implements Runnable {
         });
     }
 
-    public void bindLoadTo(AgentHolder<K, V> holder) {
-        holder.getHolderNotifier().addListener(e -> {
-            if (e != HolderEvent.REGISTERED) {
-                return;
-            }
-            try {
-                storage.load().forEach((uuid, value) -> holder.getOrCreateEntry(uuid).setValue(value, false));
-            } catch (Exception ex) {
-                LOGGER.log(Level.SEVERE, "Failed to load entries", ex);
-            }
-        });
+    public void bindTo(AgentHolder<K, V> holder) {
+        bindTo(holder, false, true);
     }
-
 
     private void save(boolean urgent) {
         if (saving.get() && !urgent) return;
@@ -158,15 +152,6 @@ public class StorageAgent<K, V> implements Runnable {
     public void setMaxEntryPerCall(int taskSaveEntryPerTick) {
         this.maxEntryPerCall = taskSaveEntryPerTick;
     }
-
-    public void setLoadOnCreate(boolean loadOnCreate) {
-        this.loadOnCreate = loadOnCreate;
-    }
-
-    public void setScheduleOnEntryRemove(boolean scheduleOnEntryRemove) {
-        this.scheduleOnEntryRemove = scheduleOnEntryRemove;
-    }
-
 
     private static final class ValueWrapper<V> {
         private final @Nullable V value;

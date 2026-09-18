@@ -77,7 +77,6 @@ public class NumberTopHolder extends SimpleDataHolder<UUID, Double> implements A
         this.storageAgent = new StorageAgent<>(template.getTopManager().buildStorage(name));
         storageAgent.setMaxEntryPerCall(template.getSettings().taskSaveEntryPerTick());
         storageAgent.bindTo(this);
-        storageAgent.bindLoadTo(this);
         bindAutoTask(template, storageAgent, TaskType.STORAGE, settings.valueProvider());
 
         ValueProvider<UUID, Double> valueProvider = template.createValueProvider(settings.valueProvider()).orElseGet(() -> {

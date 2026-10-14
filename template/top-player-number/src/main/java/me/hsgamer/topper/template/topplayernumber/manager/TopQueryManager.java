@@ -1,6 +1,5 @@
 package me.hsgamer.topper.template.topplayernumber.manager;
 
-import me.hsgamer.topper.agent.snapshot.SnapshotAgent;
 import me.hsgamer.topper.query.core.QueryManager;
 import me.hsgamer.topper.query.holder.HolderQuery;
 import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
@@ -32,13 +31,9 @@ public class TopQueryManager extends QueryManager<UUID> {
         });
         addQuery(new SnapshotQuery<UUID, Double, UUID>() {
             @Override
-            protected Optional<SnapshotAgent<UUID, Double>> getAgent(@NotNull String name) {
-                return template.getTopManager().getHolder(name).map(NumberTopHolder::getSnapshotAgent);
-            }
-
-            @Override
-            protected Optional<SimpleQueryDisplay<UUID, Double>> getDisplay(@NotNull String name) {
-                return template.getTopManager().getHolder(name).map(NumberTopHolder::getValueDisplay);
+            protected Optional<View<UUID, Double>> getView(@NotNull String name) {
+                return template.getTopManager().getHolder(name)
+                        .map(holder -> new View<>(holder.getSnapshotAgent(), holder.getValueDisplay()));
             }
 
             @Override

@@ -1,14 +1,12 @@
 package me.hsgamer.topper.query.simple;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Optional;
-import java.util.regex.Pattern;
-
-public final class SimpleQueryContext implements SimpleQuery.Context {
+public final class SimpleQueryContext {
     public final @NotNull String name;
     public final @NotNull String args;
-    private final @NotNull String actionName;
+    public final @NotNull String actionName;
 
     public SimpleQueryContext(@NotNull String name, @NotNull String args, @NotNull String actionName) {
         this.name = name;
@@ -16,31 +14,26 @@ public final class SimpleQueryContext implements SimpleQuery.Context {
         this.actionName = actionName;
     }
 
-    public static Optional<SimpleQueryContext> fromQuery(@NotNull String query, boolean singleName, @NotNull String separator) {
-        String name;
-        String actionName;
-        String args;
+    public static @Nullable SimpleQueryContext parse(@NotNull String query, boolean singleName) {
+        int actionSeparator = query.indexOf(';');
         if (singleName) {
-            String[] split = query.split(Pattern.quote(separator), 2);
-            name = "";
-            actionName = split[0];
-            args = split.length > 1 ? split[1] : "";
-        } else {
-            String[] split = query.split(Pattern.quote(separator), 3);
-            if (split.length < 2) return Optional.empty();
-            name = split[0];
-            actionName = split[1];
-            args = split.length > 2 ? split[2] : "";
+            String action = actionSeparator < 0 ? query : query.substring(0, actionSeparator);
+            String args = actionSeparator < 0 ? "" : query.substring(actionSeparator + 1);
+            return new SimpleQueryContext("", args, action);
         }
-        return Optional.of(new SimpleQueryContext(name, args, actionName));
-    }
 
-    public static Optional<SimpleQueryContext> fromQuery(@NotNull String query, boolean singleName) {
-        return fromQuery(query, singleName, ";");
-    }
+        if (actionSeparator < 0) {
+            return null;
+        }
 
-    @Override
-    public @NotNull String getActionName() {
-        return actionName;
+        String name = query.substring(0, actionSeparator);
+        int argsSeparator = query.indexOf(';', actionSeparator + 1);
+        if (argsSeparator < 0) {
+            return new SimpleQueryContext(name, "", query.substring(actionSeparator + 1));
+        }
+
+        String action = query.substring(actionSeparator + 1, argsSeparator);
+        String args = query.substring(argsSeparator + 1);
+        return new SimpleQueryContext(name, args, action);
     }
 }

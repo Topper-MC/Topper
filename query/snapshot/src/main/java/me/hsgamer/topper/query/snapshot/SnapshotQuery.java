@@ -5,56 +5,25 @@ import me.hsgamer.topper.query.simple.SimpleQuery;
 import me.hsgamer.topper.query.simple.SimpleQueryContext;
 import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.Optional;
 
 public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuery.Context<K, V>> {
     protected SnapshotQuery(String prefix) {
-        registerAction(prefix + "_name", (actor, context) -> {
-            int i = 1;
-            try {
-                i = Integer.parseInt(context.parent.args);
-            } catch (NumberFormatException ignored) {
-                // IGNORED
-            }
-            K key = context.agent.getSnapshotByIndex(i - 1).map(Map.Entry::getKey).orElse(null);
-            return context.display.getDisplayName(key);
-        });
-        registerAction(prefix + "_key", (actor, context) -> {
-            int i = 1;
-            try {
-                i = Integer.parseInt(context.parent.args);
-            } catch (NumberFormatException ignored) {
-                // IGNORED
-            }
-            K key = context.agent.getSnapshotByIndex(i - 1).map(Map.Entry::getKey).orElse(null);
-            return context.display.getDisplayKey(key);
-        });
+        registerAction(prefix + "_name", (actor, context) ->
+                context.display.getDisplayName(getKeyAt(context, context.parent.args)));
+        registerAction(prefix + "_key", (actor, context) ->
+                context.display.getDisplayKey(getKeyAt(context, context.parent.args)));
         registerAction(prefix + "_value", (actor, context) -> {
-            String[] split = context.parent.args.split(";", 2);
-            int i = 1;
-            try {
-                i = Integer.parseInt(split[0]);
-            } catch (NumberFormatException ignored) {
-                // IGNORED
-            }
-
-            String valueArgs = split.length > 1 ? split[1] : "";
-
-            V value = context.agent.getSnapshotByIndex(i - 1).map(Map.Entry::getValue).orElse(null);
-            return context.display.getDisplayValue(value, valueArgs);
+            String args = context.parent.args;
+            int separator = args.indexOf(';');
+            V value = getValueAt(context, separator < 0 ? args : args.substring(0, separator));
+            return context.display.getDisplayValue(value, separator < 0 ? "" : args.substring(separator + 1));
         });
-        registerAction(prefix + "_value_raw", (actor, context) -> {
-            int i = 1;
-            try {
-                i = Integer.parseInt(context.parent.args);
-            } catch (NumberFormatException ignored) {
-                // IGNORED
-            }
-            V value = context.agent.getSnapshotByIndex(i - 1).map(Map.Entry::getValue).orElse(null);
-            return context.display.getDisplayValue(value, "raw");
-        });
+        registerAction(prefix + "_value_raw", (actor, context) ->
+                context.display.getDisplayValue(getValueAt(context, context.parent.args), "raw"));
         registerActorAction(prefix + "_rank", (actor, context) ->
                 getKey(actor, context)
                         .map(context.agent::getSnapshotIndex)
@@ -69,13 +38,23 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
         this("top");
     }
 
-    protected abstract Optional<SnapshotAgent<K, V>> getAgent(@NotNull String name);
-
-    protected abstract Optional<SimpleQueryDisplay<K, V>> getDisplay(@NotNull String name);
-
-    protected boolean isSingleAgent() {
-        return false;
+    private static int toIndex(@NotNull String arg) {
+        try {
+            return Integer.parseInt(arg) - 1;
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
     }
+
+    private static <K, V> @Nullable K getKeyAt(@NotNull Context<K, V> context, @NotNull String arg) {
+        return context.agent.getSnapshotByIndex(toIndex(arg)).map(Map.Entry::getKey).orElse(null);
+    }
+
+    private static <K, V> @Nullable V getValueAt(@NotNull Context<K, V> context, @NotNull String arg) {
+        return context.agent.getSnapshotByIndex(toIndex(arg)).map(Map.Entry::getValue).orElse(null);
+    }
+
+    protected abstract Optional<View<K, V>> getView(@NotNull String name);
 
     protected abstract Optional<K> getKey(@NotNull A actor, @NotNull Context<K, V> context);
 
@@ -84,32 +63,30 @@ public abstract class SnapshotQuery<K, V, A> extends SimpleQuery<A, SnapshotQuer
     }
 
     @Override
-    protected Optional<Context<K, V>> getContext(@NotNull String query) {
-        return SimpleQueryContext.fromQuery(query, isSingleAgent())
-                .map(context -> {
-                    Optional<SnapshotAgent<K, V>> agent = getAgent(context.name);
-                    Optional<SimpleQueryDisplay<K, V>> display = getDisplay(context.name);
-                    if (!agent.isPresent() || !display.isPresent()) {
-                        return null;
-                    }
-                    return new Context<>(agent.get(), display.get(), context);
-                });
+    protected @Nullable Context<K, V> createContext(@NotNull SimpleQueryContext context) {
+        View<K, V> view = getView(context.name).orElse(null);
+        return view == null ? null : new Context<>(view, context);
     }
 
-    public static final class Context<K, V> implements SimpleQuery.Context {
+    public static final class View<K, V> {
+        public final @NotNull SnapshotAgent<K, V> agent;
+        public final @NotNull SimpleQueryDisplay<K, V> display;
+
+        public View(@NotNull SnapshotAgent<K, V> agent, @NotNull SimpleQueryDisplay<K, V> display) {
+            this.agent = agent;
+            this.display = display;
+        }
+    }
+
+    public static final class Context<K, V> {
         public final @NotNull SnapshotAgent<K, V> agent;
         public final @NotNull SimpleQueryDisplay<K, V> display;
         public final @NotNull SimpleQueryContext parent;
 
-        Context(@NotNull SnapshotAgent<K, V> agent, @NotNull SimpleQueryDisplay<K, V> display, @NotNull SimpleQueryContext parent) {
-            this.agent = agent;
-            this.display = display;
+        Context(@NotNull View<K, V> view, @NotNull SimpleQueryContext parent) {
+            this.agent = view.agent;
+            this.display = view.display;
             this.parent = parent;
-        }
-
-        @Override
-        public @NotNull String getActionName() {
-            return parent.getActionName();
         }
     }
 }

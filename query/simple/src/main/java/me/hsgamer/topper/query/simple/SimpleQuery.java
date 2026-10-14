@@ -7,13 +7,16 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiFunction;
 
-public abstract class SimpleQuery<A, C extends SimpleQuery.Context> implements Query<A> {
+public abstract class SimpleQuery<A, C> implements Query<A> {
     private final Map<String, BiFunction<@Nullable A, @NotNull C, @Nullable String>> actions = new HashMap<>();
 
-    protected abstract Optional<C> getContext(@NotNull String query);
+    protected abstract @Nullable C createContext(@NotNull SimpleQueryContext context);
+
+    protected boolean isSingleName() {
+        return false;
+    }
 
     protected void registerAction(String name, BiFunction<@Nullable A, @NotNull C, @Nullable String> action) {
         actions.put(name, action);
@@ -28,18 +31,15 @@ public abstract class SimpleQuery<A, C extends SimpleQuery.Context> implements Q
 
     @Override
     public @NotNull QueryResult apply(@Nullable A actor, @NotNull String query) {
-        Optional<C> optionalContext = getContext(query);
-        if (!optionalContext.isPresent()) return QueryResult.notHandled();
-        C context = optionalContext.get();
+        SimpleQueryContext parsedContext = SimpleQueryContext.parse(query, isSingleName());
+        if (parsedContext == null) return QueryResult.notHandled();
 
-        String actionName = context.getActionName();
-        BiFunction<@Nullable A, @NotNull C, @Nullable String> action = actions.get(actionName);
+        BiFunction<@Nullable A, @NotNull C, @Nullable String> action = actions.get(parsedContext.actionName);
         if (action == null) return QueryResult.notHandled();
 
-        return QueryResult.handled(action.apply(actor, context));
-    }
+        C context = createContext(parsedContext);
+        if (context == null) return QueryResult.notHandled();
 
-    public interface Context {
-        @NotNull String getActionName();
+        return QueryResult.handled(action.apply(actor, context));
     }
 }

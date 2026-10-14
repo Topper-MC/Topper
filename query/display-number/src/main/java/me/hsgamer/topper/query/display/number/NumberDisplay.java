@@ -10,7 +10,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.time.DateTimeException;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -86,7 +88,7 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                 double absValue = Math.abs(value);
 
                 Map.Entry<Double, String> entry = suffixMap.floorEntry(absValue);
-                if (entry == null || entry.getKey() == 0 || absValue < 1000) {
+                if (entry == null || entry.getKey() == 0) {
                     if (absValue == (long) absValue) {
                         return (isNegative ? "-" : "") + String.format(Locale.ENGLISH, "%,d", (long) absValue);
                     } else {
@@ -118,7 +120,7 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                 toMillis = n -> n.longValue() * 50;
             } else {
                 try {
-                    TimeUnit unit = TimeUnit.valueOf(unitString.toUpperCase());
+                    TimeUnit unit = TimeUnit.valueOf(unitString.toUpperCase(Locale.ENGLISH));
                     toMillis = n -> unit.toMillis(n.longValue());
                 } catch (IllegalArgumentException e) {
                     return n -> "INVALID_UNIT";
@@ -133,17 +135,16 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                 if (!formatterOptional.isPresent()) {
                     return n -> "INVALID_FORMAT";
                 }
-                DateTimeFormatter formatter = formatterOptional.get();
+                DateTimeFormatter formatter = formatterOptional.get().withZone(ZoneId.systemDefault());
 
-                try {
-                    return n -> {
-                        long millis = toMillis.apply(n.longValue());
-                        Instant date = Instant.ofEpochMilli(millis);
-                        return formatter.format(date);
-                    };
-                } catch (IllegalArgumentException e) {
-                    return n -> "CANNOT_FORMAT";
-                }
+                return n -> {
+                    long millis = toMillis.apply(n.longValue());
+                    try {
+                        return formatter.format(Instant.ofEpochMilli(millis));
+                    } catch (DateTimeException e) {
+                        return "CANNOT_FORMAT";
+                    }
+                };
             } else if (type.equalsIgnoreCase("duration")) {
                 String pattern = patternOptional.orElse("default");
                 if (pattern.equalsIgnoreCase("default")) {
@@ -157,6 +158,8 @@ public abstract class NumberDisplay<K, V extends Number> implements SimpleQueryD
                 } else {
                     return toMillis.andThen(millis -> DurationTimeFormatters.formatDuration(millis, pattern));
                 }
+            } else {
+                return n -> "INVALID_TYPE";
             }
         }
 

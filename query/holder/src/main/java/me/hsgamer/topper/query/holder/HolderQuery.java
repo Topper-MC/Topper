@@ -6,6 +6,7 @@ import me.hsgamer.topper.query.simple.SimpleQuery;
 import me.hsgamer.topper.query.simple.SimpleQueryContext;
 import me.hsgamer.topper.query.simple.SimpleQueryDisplay;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -40,35 +41,21 @@ public abstract class HolderQuery<K, V, H extends DataHolder<K, V>, A> extends S
     @NotNull
     protected abstract SimpleQueryDisplay<K, V> getDisplay(@NotNull H holder);
 
-    protected boolean isSingleHolder() {
-        return false;
-    }
-
     protected abstract Optional<K> getKey(@NotNull A actor, @NotNull Context<K, V, H> context);
 
     @Override
-    protected Optional<Context<K, V, H>> getContext(@NotNull String query) {
-        return SimpleQueryContext.fromQuery(query, isSingleHolder())
-                .map(context -> {
-                    Optional<H> optionalHolder = getHolder(context.name);
-                    if (!optionalHolder.isPresent()) return null;
-                    H holder = optionalHolder.get();
-                    return new Context<>(holder, context);
-                });
+    protected @Nullable Context<K, V, H> createContext(@NotNull SimpleQueryContext context) {
+        H holder = getHolder(context.name).orElse(null);
+        return holder == null ? null : new Context<>(holder, context);
     }
 
-    public static final class Context<K, V, H extends DataHolder<K, V>> implements SimpleQuery.Context {
+    public static final class Context<K, V, H extends DataHolder<K, V>> {
         public final @NotNull H holder;
         public final @NotNull SimpleQueryContext parent;
 
         Context(@NotNull H holder, @NotNull SimpleQueryContext parent) {
             this.holder = holder;
             this.parent = parent;
-        }
-
-        @Override
-        public @NotNull String getActionName() {
-            return parent.getActionName();
         }
     }
 }

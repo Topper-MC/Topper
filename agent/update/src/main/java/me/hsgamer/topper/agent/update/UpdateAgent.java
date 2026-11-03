@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -16,10 +17,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class UpdateAgent<K, V> {
+    private static final int IDLE = 0;
+    private static final int UPDATING = 1;
+    private static final int RESULT = 2;
+    private static final int RESET = 3;
+
     private final DataHolder<K, V> holder;
     private final BiConsumer<K, Consumer<ValueWrapper<V>>> updateConsumer;
 
-    private final Map<K, UpdateStatus> map = new ConcurrentHashMap<>();
+    private final Map<K, EntryState<K, V>> map = new ConcurrentHashMap<>();
 
     private Function<K, FilterResult> filter = null;
     private BiFunction<K, ValueWrapper<V>, ValueWrapper<V>> errorHandler = null;
@@ -49,74 +55,66 @@ public class UpdateAgent<K, V> {
         this.maxSkips = maxSkips;
     }
 
-    private void setValueEntry(ValueWrapper<V> valueWrapper, Map.Entry<K, UpdateStatus> entry) {
-        if (errorHandler != null && valueWrapper.state == ValueWrapper.State.ERROR) {
-            valueWrapper = errorHandler.apply(entry.getKey(), valueWrapper);
+    private void setValue(EntryState<K, V> state, V value) {
+        Optional<DataEntry<K, V>> optionalEntry = holder.getEntry(state.key);
+        if (!optionalEntry.isPresent()) {
+            state.removed = true;
+            return;
         }
-        switch (valueWrapper.state) {
-            case ERROR:
-            case NOT_HANDLED:
-                entry.setValue(new UpdateStatus.Skip(maxSkips));
-                break;
-            default:
-                entry.setValue(new UpdateStatus.Set(valueWrapper.value));
-                break;
+        optionalEntry.get().setValue(value);
+    }
+
+    private void applyResult(EntryState<K, V> state, ValueWrapper<V> valueWrapper) {
+        if (errorHandler != null && valueWrapper.state == ValueWrapper.State.ERROR) {
+            valueWrapper = errorHandler.apply(state.key, valueWrapper);
+        }
+        if (valueWrapper.state == ValueWrapper.State.HANDLED) {
+            setValue(state, valueWrapper.value);
+        } else {
+            state.skips.set(maxSkips);
         }
     }
 
     public Runnable getUpdateRunnable(int maxEntryPerCall) {
         return new Runnable() {
-            private final AtomicReference<Iterator<Map.Entry<K, UpdateStatus>>> iteratorRef = new AtomicReference<>();
+            private final ThreadLocal<Iterator<EntryState<K, V>>> iteratorRef = ThreadLocal.withInitial(() -> map.values().iterator());
 
             @Override
             public void run() {
-                Iterator<Map.Entry<K, UpdateStatus>> iterator = iteratorRef.updateAndGet(old -> old == null || !old.hasNext() ? map.entrySet().iterator() : old);
+                if (map.isEmpty()) {
+                    return;
+                }
+                Iterator<EntryState<K, V>> iterator = iteratorRef.get();
+                if (!iterator.hasNext()) {
+                    iterator = map.values().iterator();
+                    iteratorRef.set(iterator);
+                }
+
                 int count = 0;
                 while (count < maxEntryPerCall && iterator.hasNext()) {
-                    Map.Entry<K, UpdateStatus> entry;
-                    try {
-                        entry = iterator.next();
-                    } catch (Exception e) {
-                        break;
-                    }
-                    K key = entry.getKey();
-                    UpdateStatus updateStatus = entry.getValue();
-
-                    if (updateStatus instanceof UpdateStatus.Value) {
-                        ValueWrapper<V> valueWrapper = ((UpdateStatus.Value) updateStatus).get();
-                        setValueEntry(valueWrapper, entry);
-                        continue;
-                    }
-
-                    if (updateStatus != UpdateStatus.DEFAULT && !(updateStatus instanceof UpdateStatus.Set)) {
+                    EntryState<K, V> state = iterator.next();
+                    if (state.removed || state.skips.get() > 0) {
                         continue;
                     }
 
                     if (filter != null) {
-                        FilterResult filterResult = filter.apply(key);
-                        switch (filterResult) {
+                        switch (filter.apply(state.key)) {
                             case SKIP:
-                                entry.setValue(new UpdateStatus.Skip(maxSkips));
+                                state.skips.set(maxSkips);
                                 continue;
                             case RESET:
-                                entry.setValue(UpdateStatus.RESET);
+                                state.status.compareAndSet(IDLE, RESET);
                                 continue;
-                            case CONTINUE:
+                            default:
                                 // Do nothing, continue to update
                                 break;
                         }
                     }
 
-                    entry.setValue(UpdateStatus.UPDATING);
-                    updateConsumer.accept(key, valueWrapper -> entry.setValue(new UpdateStatus.Value(valueWrapper)));
-
-                    UpdateStatus afterUpdateStatus = entry.getValue();
-                    if (afterUpdateStatus instanceof UpdateStatus.Value) {
-                        ValueWrapper<V> valueWrapper = ((UpdateStatus.Value) afterUpdateStatus).get();
-                        setValueEntry(valueWrapper, entry);
+                    if (state.status.compareAndSet(IDLE, UPDATING)) {
+                        updateConsumer.accept(state.key, state);
+                        count++;
                     }
-
-                    count++;
                 }
             }
         };
@@ -124,39 +122,28 @@ public class UpdateAgent<K, V> {
 
     public Runnable getSetRunnable() {
         return () -> {
-            Iterator<Map.Entry<K, UpdateStatus>> iterator = map.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<K, UpdateStatus> entry;
-                try {
-                    entry = iterator.next();
-                } catch (Exception e) {
-                    break;
-                }
-
-                Optional<DataEntry<K, V>> optionalDataEntry = holder.getEntry(entry.getKey());
-                if (!optionalDataEntry.isPresent()) {
-                    iterator.remove();
+            for (EntryState<K, V> state : map.values()) {
+                if (state.removed) {
                     continue;
                 }
-                DataEntry<K, V> dataEntry = optionalDataEntry.get();
-
-                UpdateStatus updateStatus = entry.getValue();
-                if (updateStatus instanceof UpdateStatus.Skip) {
-                    UpdateStatus.Skip skipStatus = (UpdateStatus.Skip) updateStatus;
-                    if (skipStatus.skip()) {
-                        entry.setValue(skipStatus.decrement());
-                    } else {
-                        entry.setValue(UpdateStatus.DEFAULT);
+                int status = state.status.get();
+                if (status == RESULT) {
+                    if (!state.status.compareAndSet(RESULT, IDLE)) {
+                        continue;
                     }
-                } else if (updateStatus == UpdateStatus.RESET) {
-                    dataEntry.setValue((V) null);
-                    entry.setValue(new UpdateStatus.Skip(maxSkips));
-                } else if (updateStatus instanceof UpdateStatus.Set) {
-                    UpdateStatus.Set setStatus = (UpdateStatus.Set) updateStatus;
-                    //noinspection unchecked
-                    V value = (V) setStatus.getValue();
-                    dataEntry.setValue(value);
-                    entry.setValue(UpdateStatus.DEFAULT);
+                    ValueWrapper<V> valueWrapper = state.result.getAndSet(null);
+                    if (valueWrapper == null) {
+                        continue;
+                    }
+                    applyResult(state, valueWrapper);
+                } else if (status == RESET) {
+                    if (!state.status.compareAndSet(RESET, IDLE)) {
+                        continue;
+                    }
+                    setValue(state, null);
+                    state.skips.set(maxSkips);
+                } else if (status == IDLE && state.skips.get() > 0) {
+                    state.skips.getAndUpdate(skips -> skips > 0 ? skips - 1 : 0);
                 }
             }
         };
@@ -166,10 +153,17 @@ public class UpdateAgent<K, V> {
         holder.getEntryNotifier().addListener(e -> {
             switch (e.kind) {
                 case CREATED:
-                    map.put(e.entry.getKey(), UpdateStatus.DEFAULT);
+                    EntryState<K, V> state = new EntryState<>(e.entry.getKey());
+                    EntryState<K, V> oldState = map.put(state.key, state);
+                    if (oldState != null) {
+                        oldState.removed = true;
+                    }
                     break;
                 case REMOVED:
-                    map.remove(e.entry.getKey());
+                    EntryState<K, V> removedState = map.remove(e.entry.getKey());
+                    if (removedState != null) {
+                        removedState.removed = true;
+                    }
                     break;
                 default:
                     break;
@@ -181,5 +175,23 @@ public class UpdateAgent<K, V> {
         SKIP,
         RESET,
         CONTINUE
+    }
+
+    private static final class EntryState<K, V> implements Consumer<ValueWrapper<V>> {
+        private final K key;
+        private final AtomicInteger status = new AtomicInteger(IDLE);
+        private final AtomicReference<ValueWrapper<V>> result = new AtomicReference<>();
+        private final AtomicInteger skips = new AtomicInteger();
+        private volatile boolean removed;
+
+        private EntryState(K key) {
+            this.key = key;
+        }
+
+        @Override
+        public void accept(ValueWrapper<V> valueWrapper) {
+            result.set(valueWrapper);
+            status.set(RESULT);
+        }
     }
 }

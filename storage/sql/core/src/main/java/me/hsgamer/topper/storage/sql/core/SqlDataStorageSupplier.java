@@ -77,10 +77,17 @@ public abstract class SqlDataStorageSupplier {
                 try (Connection connection = client.getConnection()) {
                     return StatementBuilder.create(connection)
                             .setStatement("SELECT * FROM `" + name + "`;")
-                            .queryList(resultSet -> new AbstractMap.SimpleEntry<>(keyConverter.fromSqlResultSet(resultSet), valueConverter.fromSqlResultSet(resultSet)))
-                            .stream()
-                            .filter(entry -> entry.getKey() != null && entry.getValue() != null)
-                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                            .query(resultSet -> {
+                                Map<K, V> map = new HashMap<>();
+                                while (resultSet.next()) {
+                                    K key = keyConverter.fromSqlResultSet(resultSet);
+                                    V value = valueConverter.fromSqlResultSet(resultSet);
+                                    if (key != null && value != null) {
+                                        map.put(key, value);
+                                    }
+                                }
+                                return map;
+                            });
                 } catch (SQLException e) {
                     logger.log(Level.SEVERE, "Failed to load holder", e);
                     return Collections.emptyMap();

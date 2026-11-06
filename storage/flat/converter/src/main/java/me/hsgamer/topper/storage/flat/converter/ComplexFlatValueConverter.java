@@ -14,11 +14,13 @@ import java.util.regex.Pattern;
 
 public class ComplexFlatValueConverter<T> implements FlatValueConverter<T> {
     private final String stringSeparator;
+    private final Pattern separatorPattern;
     private final List<Entry<T>> entries;
     private final Supplier<T> constructor;
 
     private ComplexFlatValueConverter(String stringSeparator, List<Entry<T>> entries, Supplier<T> constructor) {
         this.stringSeparator = stringSeparator;
+        this.separatorPattern = Pattern.compile(Pattern.quote(stringSeparator));
         this.entries = entries;
         this.constructor = constructor;
     }
@@ -39,7 +41,7 @@ public class ComplexFlatValueConverter<T> implements FlatValueConverter<T> {
 
     @Override
     public @Nullable T fromString(@NotNull String value) {
-        String[] values = value.split(Pattern.quote(stringSeparator), -1);
+        String[] values = separatorPattern.split(value, -1);
         if (values.length != entries.size()) {
             return null;
         }

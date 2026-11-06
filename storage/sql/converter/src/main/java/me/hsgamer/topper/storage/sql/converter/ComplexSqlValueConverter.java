@@ -52,12 +52,14 @@ public class ComplexSqlValueConverter<T> implements SqlValueConverter<T> {
 
     @Override
     public Object[] toSqlValues(@NotNull T value) {
-        List<Object> values = new ArrayList<>();
+        Object[] values = new Object[sqlColumns.length];
+        int index = 0;
         for (Entry<T> entry : entries) {
             Object[] objectValues = entry.converter.toSqlValues(entry.getter.apply(value));
-            values.addAll(Arrays.asList(objectValues));
+            System.arraycopy(objectValues, 0, values, index, objectValues.length);
+            index += objectValues.length;
         }
-        return values.toArray(new Object[0]);
+        return values;
     }
 
     @Override

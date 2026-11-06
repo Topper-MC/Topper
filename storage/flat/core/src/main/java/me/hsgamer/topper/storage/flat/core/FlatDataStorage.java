@@ -4,7 +4,6 @@ import me.hsgamer.topper.storage.core.DataStorage;
 
 import java.io.File;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public abstract class FlatDataStorage<F, K, V> implements DataStorage<K, V> {
     private final File baseFolder;
@@ -58,15 +57,15 @@ public abstract class FlatDataStorage<F, K, V> implements DataStorage<K, V> {
     public final Map<K, V> load() {
         checkFile();
         Map<String, String> rawData = loadFromFile(file);
-        return rawData.entrySet()
-                .stream()
-                .map(entry -> {
-                    K key = keyConverter.fromString(entry.getKey());
-                    V value = valueConverter.fromString(entry.getValue());
-                    return new AbstractMap.SimpleImmutableEntry<>(key, value);
-                })
-                .filter(entry -> entry.getKey() != null && entry.getValue() != null)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<K, V> map = new HashMap<>(rawData.size());
+        for (Map.Entry<String, String> entry : rawData.entrySet()) {
+            K key = keyConverter.fromString(entry.getKey());
+            V value = valueConverter.fromString(entry.getValue());
+            if (key != null && value != null) {
+                map.put(key, value);
+            }
+        }
+        return map;
     }
 
     @Override
@@ -104,6 +103,9 @@ public abstract class FlatDataStorage<F, K, V> implements DataStorage<K, V> {
 
             @Override
             public void commit() {
+                if (runnableList.isEmpty()) {
+                    return;
+                }
                 runnableList.forEach(Runnable::run);
                 runnableList.clear();
                 saveFile(file);

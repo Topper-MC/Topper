@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 public abstract class SqlDataStorageSupplier {
     protected final Logger logger = Logger.getLogger(getClass().getSimpleName());
-    private final SqlClient<?> client;
+    protected final SqlClient<?> client;
     private final Lock lock = new ReentrantLock();
 
     protected SqlDataStorageSupplier(Driver driver, SqlDatabaseSetting databaseSetting, Function<Setting, SqlClient<?>> clientFunction) {

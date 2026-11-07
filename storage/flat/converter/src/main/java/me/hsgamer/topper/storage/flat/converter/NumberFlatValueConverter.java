@@ -7,9 +7,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Function;
 
 public class NumberFlatValueConverter<T extends Number> implements FlatValueConverter<T> {
-    private final Function<@Nullable Number, @Nullable T> numberFunction;
+    private final Function<@NotNull Number, @NotNull T> numberFunction;
 
-    public NumberFlatValueConverter(Function<@Nullable Number, @Nullable T> numberFunction) {
+    public NumberFlatValueConverter(Function<@NotNull Number, @NotNull T> numberFunction) {
         this.numberFunction = numberFunction;
     }
 

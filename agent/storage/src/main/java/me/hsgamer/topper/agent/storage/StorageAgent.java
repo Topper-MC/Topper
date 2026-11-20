@@ -7,8 +7,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -20,8 +20,11 @@ public class StorageAgent<K, V> implements Runnable {
     private final Queue<Map.Entry<K, ValueWrapper<V>>> queue = new ConcurrentLinkedQueue<>(); // Value can be null representing removal
     private final AtomicReference<Map<K, ValueWrapper<V>>> storeMap = new AtomicReference<>(new ConcurrentHashMap<>());
     private final AtomicReference<Map<K, ValueWrapper<V>>> savingMap = new AtomicReference<>();
-    private final AtomicBoolean saving = new AtomicBoolean(false);
+    private final ReentrantLock saveLock = new ReentrantLock();
     private int maxEntryPerCall = 10;
+    private long nextAttemptAt = 0L;
+    private long retryDelayMillis = 5_000L;
+    private boolean failureLogged = false;
 
     public StorageAgent(DataStorage<K, V> storage) {
         this.storage = storage;
@@ -76,68 +79,89 @@ public class StorageAgent<K, V> implements Runnable {
     }
 
     private void save(boolean urgent) {
-        if (saving.get() && !urgent) return;
-        saving.set(true);
-
-        storeMap.getAndSet(new ConcurrentHashMap<>())
-                .forEach((key, value) -> queue.add(new AbstractMap.SimpleEntry<>(key, value)));
-
-        Map<K, ValueWrapper<V>> map = savingMap.updateAndGet(old -> old == null ? new HashMap<>() : old);
-
-        int entryIndex = 0;
-        while (urgent || maxEntryPerCall <= 0 || entryIndex < maxEntryPerCall) {
-            Map.Entry<K, ValueWrapper<V>> entry = queue.poll();
-            if (entry == null) {
-                break;
-            }
-            map.put(entry.getKey(), entry.getValue());
-            entryIndex++;
-        }
-
-        if (map.isEmpty()) {
-            savingMap.set(null);
-            saving.set(false);
+        if (urgent) {
+            saveLock.lock();
+        } else if (!saveLock.tryLock()) {
             return;
         }
 
-        Set<K> removeKeys = new HashSet<>();
-        Map<K, V> finalMap = map.entrySet()
-                .stream()
-                .filter(entry -> {
-                    V value = entry.getValue().value;
-                    if (value == null) {
-                        removeKeys.add(entry.getKey());
-                        return false;
-                    }
-                    return true;
-                })
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().value));
-
-
-        Optional<DataStorage.Modifier<K, V>> optionalModifier = storage.modify();
-        if (!optionalModifier.isPresent()) {
-            saving.set(false);
-            return;
-        }
-
-        DataStorage.Modifier<K, V> modifier = optionalModifier.get();
         try {
-            modifier.save(finalMap);
-            if (!removeKeys.isEmpty()) {
-                modifier.remove(removeKeys);
+            if (!urgent && System.currentTimeMillis() < nextAttemptAt) {
+                return;
             }
-            modifier.commit();
-            savingMap.set(null);
-        } catch (Throwable t) {
-            LOGGER.log(Level.SEVERE, "Failed to save entries", t);
-            modifier.rollback();
+
+            storeMap.getAndSet(new ConcurrentHashMap<>())
+                    .forEach((key, value) -> queue.add(new AbstractMap.SimpleEntry<>(key, value)));
+
+            Map<K, ValueWrapper<V>> map = savingMap.updateAndGet(old -> old == null ? new HashMap<>() : old);
+
+            while (urgent || maxEntryPerCall <= 0 || map.size() < maxEntryPerCall) {
+                Map.Entry<K, ValueWrapper<V>> entry = queue.poll();
+                if (entry == null) {
+                    break;
+                }
+                map.put(entry.getKey(), entry.getValue());
+            }
+
+            if (map.isEmpty()) {
+                savingMap.set(null);
+                onSuccess();
+                return;
+            }
+
+            Set<K> removeKeys = new HashSet<>();
+            Map<K, V> finalMap = map.entrySet()
+                    .stream()
+                    .filter(entry -> {
+                        V value = entry.getValue().value;
+                        if (value == null) {
+                            removeKeys.add(entry.getKey());
+                            return false;
+                        }
+                        return true;
+                    })
+                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().value));
+
+
+            Optional<DataStorage.Modifier<K, V>> optionalModifier = storage.modify();
+            if (!optionalModifier.isPresent()) {
+                onFailure(null);
+                return;
+            }
+
+            DataStorage.Modifier<K, V> modifier = optionalModifier.get();
+            try {
+                modifier.save(finalMap);
+                if (!removeKeys.isEmpty()) {
+                    modifier.remove(removeKeys);
+                }
+                modifier.commit();
+                savingMap.set(null);
+                onSuccess();
+            } catch (Throwable t) {
+                onFailure(t);
+                modifier.rollback();
+            }
         } finally {
-            saving.set(false);
+            saveLock.unlock();
         }
     }
 
     protected void scheduleValue(K key, @Nullable V value) {
         storeMap.get().put(key, new ValueWrapper<>(value));
+    }
+
+    private void onFailure(@Nullable Throwable t) {
+        nextAttemptAt = System.currentTimeMillis() + retryDelayMillis;
+        if (t != null) {
+            LOGGER.log(failureLogged ? Level.FINE : Level.SEVERE, "Failed to save entries", t);
+            failureLogged = true;
+        }
+    }
+
+    private void onSuccess() {
+        nextAttemptAt = 0L;
+        failureLogged = false;
     }
 
     @Override
@@ -151,6 +175,10 @@ public class StorageAgent<K, V> implements Runnable {
 
     public void setMaxEntryPerCall(int taskSaveEntryPerTick) {
         this.maxEntryPerCall = taskSaveEntryPerTick;
+    }
+
+    public void setRetryDelayMillis(long retryDelayMillis) {
+        this.retryDelayMillis = retryDelayMillis;
     }
 
     private static final class ValueWrapper<V> {

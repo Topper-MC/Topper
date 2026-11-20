@@ -16,6 +16,16 @@ public class MySqlDataStorageSupplier extends SqlDataStorageSupplier {
     }
 
     @Override
+    protected void applyDefaultDriverProperties(Setting setting) {
+        if (!setting.getDriverProperties().containsKey("connectTimeout")) {
+            setting.setDriverProperty("connectTimeout", 5000);
+        }
+        if (!setting.getDriverProperties().containsKey("socketTimeout")) {
+            setting.setDriverProperty("socketTimeout", 30000);
+        }
+    }
+
+    @Override
     protected String getIncrementalKeyDefinition() {
         return "INTEGER PRIMARY KEY AUTO_INCREMENT";
     }

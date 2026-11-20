@@ -26,7 +26,12 @@ public abstract class SqlDataStorageSupplier {
         if (clientFunction == null) {
             throw new IllegalArgumentException("clientFunction is null");
         }
-        this.client = clientFunction.apply(applyDatabaseSetting(databaseSetting, Setting.create(driver)));
+        Setting setting = applyDatabaseSetting(databaseSetting, Setting.create(driver));
+        applyDefaultDriverProperties(setting);
+        this.client = clientFunction.apply(setting);
+    }
+
+    protected void applyDefaultDriverProperties(Setting setting) {
     }
 
     protected static Setting applyDatabaseSetting(SqlDatabaseSetting databaseSetting, Setting setting) {
@@ -201,12 +206,19 @@ public abstract class SqlDataStorageSupplier {
                             batchBuilder.execute();
                         }
 
+                        private boolean closed = false;
+
                         private void close() {
+                            if (closed) {
+                                return;
+                            }
+                            closed = true;
                             try {
                                 connection.close();
                             } catch (SQLException e) {
-                                logger.log(Level.SEVERE, "Failed to close connection", e);
+                                logger.log(Level.FINE, "Failed to close connection", e);
                             }
+                            unlock();
                         }
 
                         @Override
@@ -214,22 +226,23 @@ public abstract class SqlDataStorageSupplier {
                             try {
                                 connection.commit();
                             } catch (SQLException e) {
-                                logger.log(Level.SEVERE, "Failed to commit", e);
-                            } finally {
                                 close();
-                                unlock();
+                                throw new IllegalStateException("Failed to commit", e);
                             }
+                            close();
                         }
 
                         @Override
                         public void rollback() {
+                            if (closed) {
+                                return;
+                            }
                             try {
                                 connection.rollback();
                             } catch (SQLException e) {
-                                logger.log(Level.SEVERE, "Failed to rollback", e);
+                                logger.log(Level.FINE, "Failed to rollback", e);
                             } finally {
                                 close();
-                                unlock();
                             }
                         }
                     };
